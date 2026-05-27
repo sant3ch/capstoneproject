@@ -1,0 +1,196 @@
+/* navigation.css - Custom navigation styles for Jorish Express Laundry */
+
+:root {
+    /* Brand Colors */
+    --purple-primary: #6f42c1;
+    --purple-dark: #5a32a3;
+    --purple-light: #8a63d2;
+}
+
+/* White header background */
+.navbar.bg-light {
+    background-color: white !important;
+    padding: 15px 0;
+    box-shadow: 0 2px 10px rgba(111, 66, 193, 0.1);
+}
+
+/* Logo on the left */
+.navbar-brand {
+    margin-right: 40px;
+}
+
+.navbar-brand img {
+    height: 45px;
+    transition: transform 0.3s ease;
+}
+
+.navbar-brand:hover img {
+    transform: scale(1.05);
+}
+
+/* Center the navigation links */
+.navbar-nav.mx-auto {
+    display: flex;
+    gap: 30px;
+    flex-grow: 1;
+    justify-content: center;
+}
+
+/* Navigation links styling - UPDATED */
+.navbar-nav .nav-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.navbar-nav .nav-link {
+    color: #333 !important;
+    font-weight: 600;
+    font-size: 16px;
+    padding: 8px 15px !important; /* Added horizontal padding */
+    position: relative;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+    text-align: center;
+    width: 100%;
+}
+
+/* Purple hover effect */
+.navbar-nav .nav-link:hover {
+    color: var(--purple-primary) !important;
+}
+
+/* Remove underline effect - no ::after pseudo-element */
+
+/* Active link styling - UPDATED */
+.navbar-nav .nav-link.active {
+    color: var(--purple-primary) !important;
+    font-weight: 700;
+}
+
+/* Right side buttons - positioned properly */
+.navbar .d-flex.align-items-center {
+    margin-left: auto;
+    gap: 10px;
+}
+
+/* Notification and user profile buttons */
+.btn-outline-primary.position-relative.me-3 {
+    border-color: #6f42c1;
+    color: #6f42c1;
+}
+
+.btn-outline-primary.position-relative.me-3:hover {
+    background-color: #6f42c1;
+    color: white;
+}
+
+/* User dropdown button */
+.btn-primary.text-white.dropdown-toggle {
+    background-color: var(--purple-primary);
+    border-color: var(--purple-primary);
+}
+
+.btn-primary.text-white.dropdown-toggle:hover {
+    background-color: var(--purple-dark);
+    border-color: var(--purple-dark);
+}
+
+/* Login/Register buttons */
+.navbar .btn-outline-primary {
+    border-color: var(--purple-primary);
+    color: var(--purple-primary);
+    font-weight: 500;
+    padding: 8px 20px;
+}
+
+.navbar .btn-outline-primary:hover {
+    background-color: var(--purple-primary);
+    color: white;
+}
+
+.navbar .btn-primary {
+    background-color: var(--purple-primary);
+    border-color: var(--purple-primary);
+    color: white;
+    font-weight: 500;
+    padding: 8px 20px;
+}
+
+.navbar .btn-primary:hover {
+    background-color: var(--purple-dark);
+    border-color: var(--purple-dark);
+    color: white;
+}
+
+/* Mobile menu adjustments - UPDATED */
+@media (max-width: 991px) {
+    .navbar .d-flex.align-items-center {
+        margin-left: 0;
+        margin-top: 15px;
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .navbar-nav.mx-auto {
+        gap: 15px;
+        margin: 15px 0;
+        text-align: center;
+    }
+    
+    .navbar-brand {
+        margin-right: 0;
+    }
+    
+    .navbar-nav .nav-item {
+        justify-content: center;
+    }
+    
+    .navbar-nav .nav-item::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    .navbar-nav .nav-item:hover::after {
+        width: 80%;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    .navbar-nav .nav-item.active::after {
+        width: 80%;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+}
+
+/* Mobile menu toggle button */
+.navbar-toggler {
+    border-color: #6f42c1 !important;
+    margin-left: auto;
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%236f42c1' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
+}
+
+/* Dropdown menu styling */
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 5px 15px rgba(111, 66, 193, 0.1);
+    border-radius: 8px;
+    border-top: 3px solid #6f42c1;
+}
+
+.dropdown-item {
+    padding: 10px 20px;
+    transition: all 0.3s ease;
+    color: #333;
+}
+
+.dropdown-item:hover {
+    background-color: #6f42c1;
+    color: white !important;
+}

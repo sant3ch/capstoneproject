@@ -1,0 +1,110 @@
+.footer-section h2, 
+.footer-section h3, 
+.footer-section h4, 
+.footer-section h5, 
+.footer-section h6 { 
+    color: #6f42c1 !important; 
+}
+
+/* Footer links - SINGLE DEFINITION */
+.footer-link { 
+    color: #5a32a3 !important; 
+    text-decoration: none !important; /* Force no underline */
+    transition: all 0.3s ease;
+    position: relative;
+    display: inline-block;
+    padding-bottom: 2px;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Purple underline on hover - using pseudo-element */
+.footer-link:hover { 
+    color: #6f42c1 !important; 
+    text-decoration: none !important; /* Ensure no text-decoration underline */
+}
+
+.footer-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: #6f42c1;
+    transition: width 0.3s ease;
+}
+
+.footer-link:hover::after {
+    width: 100%;
+}
+
+/* Social media icons */
+.social-icon { 
+    color: #000000 !important; /* Black by default */
+    transition: all 0.3s ease; 
+    text-decoration: none !important;
+    display: inline-block;
+}
+
+.social-icon:hover { 
+    color: #6f42c1 !important; 
+    transform: scale(1.1); 
+}
+
+/* Footer improvements */
+.follow-text { 
+    color: #6f42c1 !important; 
+    font-weight: 500; 
+    font-size: 1.1rem; 
+}
+
+/* Copyright text */
+.copyright-text { 
+    color: #5a32a3 !important; 
+    font-size: 0.9rem; 
+}
+
+/* Floating Social Media Mobile */
+    .floating-social-container {
+        right: 10px;
+        bottom: 120px;
+    }
+    
+    .social-icons-wrapper {
+        width: 65px;
+        padding: 10px;
+        min-height: 125px;
+        border-radius: 10px;
+    }
+    
+    .social-icons-wrapper:hover {
+        width: 170px;
+    }
+    
+    .social-icon-item i {
+        font-size: 19px;
+        width: 34px;
+        height: 34px;
+    }
+
+@media (max-width: 576px) {
+    .hero-section h1 {
+        font-size: 2rem;
+    }
+    
+    .hero-section {
+        padding: 40px 15px;
+    }
+    
+    .loyalty-section,
+    .how-it-works-section,
+    .testimonial-section {
+        padding: 40px 15px;
+    }
+    
+    .loyalty-card-container {
+        gap: 15px;
+    }
+}
+

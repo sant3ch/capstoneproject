@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mysql -u root jorishlaundry -e \"SHOW TABLES;\")",
+      "Bash(mysql -u root jorishlaundry -e \"DESCRIBE services;\")",
+      "Bash(mysql -u root jorishlaundry -e \"SELECT * FROM services LIMIT 10;\")",
+      "Bash(php -r ' *)"
+    ]
+  }
+}

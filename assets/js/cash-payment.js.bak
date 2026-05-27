@@ -1,0 +1,446 @@
+/**
+ * Cash on Delivery Payment Handler
+ * Handles COD order placement with address editing capability
+ */
+
+document.addEventListener('DOMContentLoaded', function() {
+    const submitBtn = document.getElementById('submitCashPaymentBtn');
+    const editAddressBtn = document.getElementById('editAddressBtn');
+    const saveAddressBtn = document.getElementById('saveAddressBtn');
+    const cancelAddressBtn = document.getElementById('cancelAddressBtn');
+    const addressDisplay = document.getElementById('addressDisplay');
+    const addressEditForm = document.getElementById('addressEditForm');
+    const addressText = document.getElementById('addressText');
+    const addressInput = document.getElementById('addressInput');
+    const cashModal = document.getElementById('cashModal');
+    const cashSuccessModal = document.getElementById('cashSuccessModal');
+    
+    if (!submitBtn) return;
+
+    // Show/hide address editing
+    if (editAddressBtn) {
+        editAddressBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            addressDisplay.style.display = 'none';
+            addressEditForm.style.display = 'block';
+            addressInput.focus();
+        });
+    }
+
+    if (cancelAddressBtn) {
+        cancelAddressBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            addressEditForm.style.display = 'none';
+            addressDisplay.style.display = 'block';
+            // Reset input to current address
+            addressInput.value = addressText.textContent;
+        });
+    }
+
+    if (saveAddressBtn) {
+        saveAddressBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const newAddress = addressInput.value.trim();
+            
+            if (!newAddress) {
+                Swal.fire({
+                    title: 'Address Required',
+                    text: 'Please enter a delivery address',
+                    icon: 'warning',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+
+            // Update address display
+            addressText.textContent = newAddress;
+            addressEditForm.style.display = 'none';
+            addressDisplay.style.display = 'block';
+            
+            // Show success message
+            Swal.fire({
+                title: 'Address Updated',
+                text: 'Delivery address has been updated',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        });
+    }
+
+    // Submit COD order
+    submitBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        // Validate address is filled
+        const currentAddress = addressText.textContent.trim();
+        if (!currentAddress || currentAddress === 'No address provided') {
+            Swal.fire({
+                title: 'Address Required',
+                text: 'Please provide a delivery address',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        // Show loading
+        submitBtn.disabled = true;
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Processing...';
+
+        // Get booking ID from page - try multiple locations
+        let bookingId = '';
+        
+        // Try from .id-number element (booking_confirmation.php)
+        const idNumberElement = document.querySelector('.id-number');
+        if (idNumberElement) {
+            bookingId = idNumberElement.textContent.replace('#', '').trim();
+        }
+        
+        // Fallback: try to find it in modal header or other locations
+        if (!bookingId) {
+            const allText = cashModal.textContent;
+            const bookingMatch = allText.match(/Booking\s*ID[:\s]*#?(\d+)/);
+            if (bookingMatch) {
+                bookingId = bookingMatch[1];
+            }
+        }
+
+        // Get amount from modal - look for the total line
+        let totalAmount = 0;
+        const breakdownItems = document.querySelectorAll('.breakdown-item');
+        if (breakdownItems.length > 0) {
+            // Last breakdown item is usually the total
+            const lastItem = breakdownItems[breakdownItems.length - 1];
+            const amountText = lastItem.querySelector('span:last-child').textContent;
+            totalAmount = parseFloat(amountText.replace(/[^0-9.]/g, ''));
+        }
+
+        // Create FormData
+        const formData = new FormData();
+        formData.append('booking_id', bookingId);
+        formData.append('payment_method', 'cash');
+        formData.append('total_amount', totalAmount);
+        formData.append('delivery_address', currentAddress);
+        formData.append('selected_services', '');
+
+        // Submit to process_payment.php
+        fetch('../admin/process_payment.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+
+            if (data.status === 'success') {
+                // Close payment modal
+                const bsModal = bootstrap.Modal.getInstance(cashModal);
+                if (bsModal) bsModal.hide();
+
+                // Show success modal
+                const successModal = new bootstrap.Modal(cashSuccessModal);
+                successModal.show();
+
+                // Populate success details
+                document.getElementById('successCashBookingId').textContent = '#' + (bookingId || '');
+                document.getElementById('successCashAmount').textContent = '₱' + totalAmount.toFixed(2);
+                document.getElementById('paymentAmountDisplay').textContent = '₱' + totalAmount.toFixed(2);
+
+                // OK button handler
+                document.getElementById('cashSuccessOkBtn').addEventListener('click', function() {
+                    window.location.href = 'user-profile.php';
+                });
+
+                // Auto redirect after 3 seconds
+                setTimeout(() => {
+                    window.location.href = 'user-profile.php';
+                }, 3000);
+            } else {
+                Swal.fire({
+                    title: 'Order Failed',
+                    text: data.message || 'An error occurred while processing your order',
+                    icon: 'error',
+                    confirmButtonText: 'Try Again'
+                });
+            }
+        })
+        .catch(error => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            
+            console.error('Order error:', error);
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to process order. Please try again.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        });
+    });
+
+    // Success modal handler
+    const cashSuccessOkBtn = document.getElementById('cashSuccessOkBtn');
+    if (cashSuccessOkBtn) {
+        cashSuccessOkBtn.addEventListener('click', function() {
+            window.location.href = 'user-profile.php';
+        });
+    }
+});
+
+/**
+ * Update the cash modal with the correct estimated amount
+ */
+function updateCashModalAmount() {
+    let estimatedAmount = 0;
+    
+    // Try different sources for the amount
+    const breakdownTotalElement = document.querySelector('.breakdown-item:last-child span:last-child');
+    if (breakdownTotalElement) {
+        const amountText = breakdownTotalElement.textContent;
+        const amountMatch = amountText.match(/[\d,]+\.?\d*/);
+        if (amountMatch) {
+            estimatedAmount = parseFloat(amountMatch[0].replace(/,/g, ''));
+        }
+    }
+    
+    if (estimatedAmount === 0) {
+        const amountValueElement = document.querySelector('.amount-value');
+        if (amountValueElement) {
+            const amountText = amountValueElement.textContent;
+            const amountMatch = amountText.match(/[\d,]+\.?\d*/);
+            if (amountMatch) {
+                estimatedAmount = parseFloat(amountMatch[0].replace(/,/g, ''));
+            }
+        }
+    }
+    
+    if (estimatedAmount === 0) {
+        const estimatedAmountInput = document.getElementById('estimatedCashAmount');
+        if (estimatedAmountInput && estimatedAmountInput.value) {
+            const amountText = estimatedAmountInput.value;
+            const amountMatch = amountText.match(/[\d,]+\.?\d*/);
+            if (amountMatch) {
+                estimatedAmount = parseFloat(amountMatch[0].replace(/,/g, ''));
+            }
+        }
+    }
+    
+    // Format and update
+    const formattedAmount = formatCurrency(estimatedAmount);
+    
+    const estimatedAmountInput = document.getElementById('estimatedCashAmount');
+    if (estimatedAmountInput) {
+        estimatedAmountInput.value = formattedAmount;
+    }
+    
+    window.currentCashAmount = estimatedAmount;
+    
+    return estimatedAmount;
+}
+
+/**
+ * Format currency amount
+ */
+function formatCurrency(amount) {
+    if (isNaN(amount) || amount === 0) {
+        return '₱0.00';
+    }
+    return '₱' + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+/**
+ * Get the current booking ID
+ */
+function getCurrentBookingId() {
+    const bookingIdInput = document.querySelector('#cashBookingId');
+    if (bookingIdInput && bookingIdInput.value) {
+        return bookingIdInput.value.replace('#', '').trim();
+    }
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const idFromUrl = urlParams.get('id');
+    if (idFromUrl) {
+        return idFromUrl;
+    }
+    
+    const bookingIdElement = document.querySelector('.id-number');
+    if (bookingIdElement) {
+        const idText = bookingIdElement.textContent;
+        const idMatch = idText.match(/\d+/);
+        if (idMatch) {
+            return idMatch[0];
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Submit cash on delivery payment request
+ */
+async function submitCashPaymentRequest() {
+    const submitBtn = document.getElementById('submitCashRequestBtn');
+    
+    if (!submitBtn) {
+        console.error('Submit button not found');
+        return;
+    }
+    
+    // Get booking ID
+    const bookingId = getCurrentBookingId();
+    
+    if (!bookingId) {
+        Swal.fire('Error', 'Booking ID not found. Please refresh the page and try again.', 'error');
+        return;
+    }
+    
+    // Get the estimated amount
+    const estimatedAmount = updateCashModalAmount();
+    
+    if (estimatedAmount <= 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Invalid Amount',
+            text: 'Unable to determine the payment amount. Please refresh the page and try again.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+    
+    // Show loading state
+    const originalBtnText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Submitting...';
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    
+    try {
+        console.log('=== CASH REQUEST START ===');
+        console.log('Booking ID:', bookingId);
+        console.log('Amount:', estimatedAmount);
+        
+        const formData = new FormData();
+        formData.append('booking_id', bookingId);
+        formData.append('payment_method', 'Cash on Delivery');
+        formData.append('amount', estimatedAmount);
+        
+        const response = await fetch('submit_cash_request.php', {
+            method: 'POST',
+            body: formData,
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        const responseText = await response.text();
+        
+        console.log('Response status:', response.status);
+        console.log('Response text preview:', responseText.substring(0, 500));
+        
+        if (responseText.length === 0) {
+            throw new Error('Server returned empty response. Please try again.');
+        }
+        
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('JSON Parse Error:', parseError);
+            console.error('Full response:', responseText);
+            
+            if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
+                if (responseText.includes('login.php')) {
+                    throw new Error('Your session has expired. Please refresh the page and login again.');
+                }
+                throw new Error('Server error. Please check your connection and try again.');
+            }
+            throw new Error('Server returned invalid response: ' + responseText.substring(0, 200));
+        }
+        
+        if (data.status === 'success') {
+            console.log('Cash request successful:', data);
+            
+            const cashModalInstance = bootstrap.Modal.getInstance(document.getElementById('cashModal'));
+            if (cashModalInstance) {
+                cashModalInstance.hide();
+            }
+            
+            const successCashBookingId = document.getElementById('successCashBookingId');
+            const successCashTime = document.getElementById('successCashTime');
+            const successCashAmount = document.getElementById('successCashAmount');
+            
+            if (successCashBookingId) {
+                successCashBookingId.textContent = '#' + bookingId;
+            }
+            if (successCashTime) {
+                successCashTime.textContent = new Date().toLocaleTimeString();
+            }
+            if (successCashAmount) {
+                successCashAmount.textContent = formatCurrency(estimatedAmount);
+            }
+            
+            const successModal = new bootstrap.Modal(document.getElementById('cashSuccessModal'));
+            successModal.show();
+            
+            startCountdown(10);
+            
+        } else {
+            let errorMsg = data.message || 'Failed to submit cash on delivery request';
+            
+            if (data.message && data.message.includes('already pending')) {
+                errorMsg = 'A cash request is already pending for this booking. Please wait for it to be processed.';
+            } else if (data.message && data.message.includes('Booking not found')) {
+                errorMsg = 'Booking not found. Please refresh the page and try again.';
+            }
+            
+            Swal.fire({
+                icon: 'error',
+                title: 'Request Failed',
+                text: errorMsg,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                confirmButtonText: 'Retry'
+            });
+        }
+        
+    } catch (error) {
+        console.error('Cash request error:', error);
+        
+        let errorMsg = 'Network error. Please check your connection and try again.';
+        if (error.name === 'AbortError') {
+            errorMsg = 'Request timed out. Please try again.';
+        } else if (error.message) {
+            errorMsg = error.message;
+        }
+        
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: errorMsg,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            confirmButtonText: 'Retry'
+        });
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+    }
+}
+
+/**
+ * Start countdown timer before redirecting
+ */
+function startCountdown(seconds) {
+    let remaining = seconds;
+    const interval = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+            clearInterval(interval);
+            window.location.href = 'user-profile.php';
+        }
+    }, 1000);
+}

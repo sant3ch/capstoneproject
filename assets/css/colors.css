@@ -1,0 +1,441 @@
+/* Global Color Theme for Jorish Laundry Express
+   All color values are defined here and referenced throughout the website
+   This ensures consistent branding and easy theme updates */
+
+:root {
+    /* ============================================
+       PRIMARY COLORS - Brand Identity
+       ============================================ */
+    --purple-primary: #6366f1;
+    --purple-dark: #4338ca;
+    --purple-light: #818cf8;
+    
+    /* ============================================
+       NEUTRAL COLORS - Typography & Backgrounds
+       ============================================ */
+    --black: #000000;
+    --white: #ffffff;
+    --gray-light: #f8f9fa;
+    --gray-medium: #dee2e6;
+    --gray-dark: #555555;
+    
+    /* ============================================
+       STATUS COLORS - User Feedback
+       ============================================ */
+    
+    /* Success - Available, Approved, Operational */
+    --success: #198754;
+    --success-light: #d1e7dd;
+    --success-dark: #0f5132;
+    
+    /* Danger - Unavailable, Rejected, Error */
+    --danger: #dc3545;
+    --danger-light: #f8d7da;
+    --danger-dark: #721c24;
+    
+    /* Warning - Booked, Pending, Caution */
+    --warning: #ffc107;
+    --warning-light: #fff3cd;
+    --warning-dark: #664d03;
+    
+    /* Info - General Information */
+    --info: #0dcaf0;
+    --info-light: #cfe2ff;
+    --info-dark: #084298;
+    
+    /* ============================================
+       ANIMATION
+       ============================================ */
+    --transition: all 0.3s ease;
+}
+
+/* ============================================
+   BUTTON STYLING - Override Bootstrap defaults
+   Use purple primary for all primary actions
+   ============================================ */
+.btn-primary {
+    background-color: var(--purple-primary);
+    border-color: var(--purple-primary);
+    color: var(--white);
+}
+
+.btn-primary:hover {
+    background-color: var(--purple-dark);
+    border-color: var(--purple-dark);
+    color: var(--white);
+}
+
+.btn-primary:active,
+.btn-primary.active,
+.btn-primary:focus {
+    background-color: var(--purple-dark);
+    border-color: var(--purple-dark);
+    color: var(--white);
+}
+
+.btn-outline-primary {
+    color: var(--purple-primary);
+    border-color: var(--purple-primary);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--purple-primary);
+    border-color: var(--purple-primary);
+    color: var(--white);
+}
+
+/* ============================================
+   STATUS BADGES
+   ============================================ */
+.badge {
+    background-color: var(--purple-primary);
+    color: var(--white);
+}
+
+.badge.bg-success {
+    background-color: var(--success) !important;
+    color: var(--white) !important;
+}
+
+.badge.bg-danger {
+    background-color: var(--danger) !important;
+    color: var(--white) !important;
+}
+
+.badge.bg-warning {
+    background-color: var(--warning) !important;
+    color: var(--black) !important;
+}
+
+.badge.bg-info {
+    background-color: var(--info) !important;
+    color: var(--white) !important;
+}
+
+.badge.bg-light {
+    background-color: var(--gray-light) !important;
+    color: var(--black) !important;
+}
+
+/* ============================================
+   STATUS INDICATORS
+   ============================================ */
+.status-available,
+.status-operational {
+    background-color: var(--success-light);
+    color: var(--success-dark);
+    border: 1px solid var(--success);
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.status-unavailable,
+.status-error,
+.status-rejected {
+    background-color: var(--danger-light);
+    color: var(--danger-dark);
+    border: 1px solid var(--danger);
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.status-booked,
+.status-pending,
+.status-warning {
+    background-color: var(--warning-light);
+    color: var(--warning-dark);
+    border: 1px solid var(--warning);
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.status-info {
+    background-color: var(--info-light);
+    color: var(--info-dark);
+    border: 1px solid var(--info);
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-weight: 500;
+    display: inline-block;
+}
+
+/* ============================================
+   ALERT STYLING
+   ============================================ */
+.alert-success {
+    background-color: var(--success-light);
+    border-color: var(--success);
+    color: var(--success-dark);
+}
+
+.alert-danger {
+    background-color: var(--danger-light);
+    border-color: var(--danger);
+    color: var(--danger-dark);
+}
+
+.alert-warning {
+    background-color: var(--warning-light);
+    border-color: var(--warning);
+    color: var(--warning-dark);
+}
+
+.alert-info {
+    background-color: var(--info-light);
+    border-color: var(--info);
+    color: var(--info-dark);
+}
+
+/* ============================================
+   TEXT COLORS
+   ============================================ */
+.text-success {
+    color: var(--success) !important;
+}
+
+.text-danger {
+    color: var(--danger) !important;
+}
+
+.text-warning {
+    color: var(--warning-dark) !important;
+}
+
+.text-info {
+    color: var(--info) !important;
+}
+
+.text-primary {
+    color: var(--purple-primary) !important;
+}
+
+/* ============================================
+   BACKGROUND COLORS
+   ============================================ */
+.bg-success-light {
+    background-color: var(--success-light);
+}
+
+.bg-danger-light {
+    background-color: var(--danger-light);
+}
+
+.bg-warning-light {
+    background-color: var(--warning-light);
+}
+
+.bg-info-light {
+    background-color: var(--info-light);
+}
+
+.bg-purple-primary {
+    background-color: var(--purple-primary);
+    color: var(--white);
+}
+
+.bg-purple-dark {
+    background-color: var(--purple-dark);
+    color: var(--white);
+}
+
+.bg-purple-light {
+    background-color: var(--purple-light);
+    color: var(--white);
+}
+
+/* ============================================
+   BORDER COLORS
+   ============================================ */
+.border-success {
+    border-color: var(--success) !important;
+}
+
+.border-danger {
+    border-color: var(--danger) !important;
+}
+
+.border-warning {
+    border-color: var(--warning) !important;
+}
+
+.border-info {
+    border-color: var(--info) !important;
+}
+
+.border-primary {
+    border-color: var(--purple-primary) !important;
+}
+
+/* ============================================
+   ICON COLORS
+   ============================================ */
+.icon-success {
+    color: var(--success);
+}
+
+.icon-danger {
+    color: var(--danger);
+}
+
+.icon-warning {
+    color: var(--warning);
+}
+
+.icon-info {
+    color: var(--info);
+}
+
+.icon-primary {
+    color: var(--purple-primary);
+}
+
+/* ============================================
+   CARD STYLING
+   ============================================ */
+.card {
+    border-color: var(--gray-medium);
+    background-color: var(--white);
+}
+
+.card-header {
+    background-color: var(--gray-light);
+    border-bottom-color: var(--gray-medium);
+    color: var(--black);
+}
+
+.card-footer {
+    background-color: var(--gray-light);
+    border-top-color: var(--gray-medium);
+}
+
+/* ============================================
+   INPUT STYLING
+   ============================================ */
+.form-control:focus {
+    border-color: var(--purple-primary);
+    box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25);
+}
+
+.form-select:focus {
+    border-color: var(--purple-primary);
+    box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25);
+}
+
+/* ============================================
+   LINK COLORS
+   ============================================ */
+a {
+    color: var(--purple-primary);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--purple-dark);
+    text-decoration: underline;
+}
+
+/* ============================================
+   TABLE STYLING
+   ============================================ */
+.table {
+    color: var(--black);
+}
+
+.table thead {
+    background-color: var(--gray-light);
+    color: var(--black);
+}
+
+.table tbody tr:hover {
+    background-color: var(--gray-light);
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: var(--white);
+}
+
+.table-striped tbody tr:nth-of-type(even) {
+    background-color: var(--gray-light);
+}
+
+/* ============================================
+   MODAL STYLING
+   ============================================ */
+.modal-header {
+    background-color: var(--gray-light);
+    border-bottom-color: var(--gray-medium);
+}
+
+.modal-footer {
+    background-color: var(--gray-light);
+    border-top-color: var(--gray-medium);
+}
+
+/* ============================================
+   NAVIGATION STYLING
+   ============================================ */
+.navbar-brand {
+    color: var(--purple-primary) !important;
+}
+
+.nav-link {
+    color: var(--gray-dark) !important;
+    transition: var(--transition);
+}
+
+.nav-link:hover {
+    color: var(--purple-primary) !important;
+}
+
+.nav-link.active {
+    color: var(--purple-primary) !important;
+    font-weight: 600;
+}
+
+/* ============================================
+   HIGHLIGHT & EMPHASIS
+   ============================================ */
+.highlight-success {
+    background-color: var(--success-light);
+    color: var(--success-dark);
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.highlight-danger {
+    background-color: var(--danger-light);
+    color: var(--danger-dark);
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.highlight-warning {
+    background-color: var(--warning-light);
+    color: var(--warning-dark);
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.highlight-info {
+    background-color: var(--info-light);
+    color: var(--info-dark);
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+/* ============================================
+   RESPONSIVE UTILITIES
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

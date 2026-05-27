@@ -1,0 +1,20 @@
+[03-Feb-2026 11:14:07 Europe/Berlin] PHP Warning:  require_once(config.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\jorishlaundry\user\submit_gcash_request.php on line 16
+[03-Feb-2026 11:14:07 Europe/Berlin] PHP Fatal error:  Uncaught Error: Failed opening required 'config.php' (include_path='.;C:\xampp\php\PEAR;C:\xampp\htdocs\motorcycle') in C:\xampp\htdocs\jorishlaundry\user\submit_gcash_request.php:16
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\jorishlaundry\user\submit_gcash_request.php on line 16
+[03-Feb-2026 11:27:01 Europe/Berlin] PHP Warning:  require_once(config.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\jorishlaundry\user\submit_gcash_request.php on line 16
+[03-Feb-2026 11:27:01 Europe/Berlin] PHP Fatal error:  Uncaught Error: Failed opening required 'config.php' (include_path='.;C:\xampp\php\PEAR;C:\xampp\htdocs\motorcycle') in C:\xampp\htdocs\jorishlaundry\user\submit_gcash_request.php:16
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\jorishlaundry\user\submit_gcash_request.php on line 16
+[03-Feb-2026 11:27:03 Europe/Berlin] PHP Warning:  require_once(config.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\jorishlaundry\user\submit_gcash_request.php on line 16
+[03-Feb-2026 11:27:03 Europe/Berlin] PHP Fatal error:  Uncaught Error: Failed opening required 'config.php' (include_path='.;C:\xampp\php\PEAR;C:\xampp\htdocs\motorcycle') in C:\xampp\htdocs\jorishlaundry\user\submit_gcash_request.php:16
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\jorishlaundry\user\submit_gcash_request.php on line 16
+[03-Feb-2026 11:29:02 Europe/Berlin] PHP Warning:  require_once(config.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\jorishlaundry\user\submit_gcash_request.php on line 16
+[03-Feb-2026 11:29:02 Europe/Berlin] PHP Fatal error:  Uncaught Error: Failed opening required 'config.php' (include_path='.;C:\xampp\php\PEAR;C:\xampp\htdocs\motorcycle') in C:\xampp\htdocs\jorishlaundry\user\submit_gcash_request.php:16
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\jorishlaundry\user\submit_gcash_request.php on line 16

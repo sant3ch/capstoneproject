@@ -1,0 +1,305 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1260" viewBox="0 0 1800 1260" role="img" aria-labelledby="title desc">
+  <title id="title">Joris Laundry Data Flow Diagram Level 3 Queue Management</title>
+  <desc id="desc">Level 3 data flow diagram showing queue management from machine assignment, queueing, processing, ready for pickup, delivery, and completed order.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f7fafc; }
+      .title { font: 700 34px Arial, Helvetica, sans-serif; fill: #14213d; }
+      .subtitle { font: 400 16px Arial, Helvetica, sans-serif; fill: #52616f; }
+      .entity { fill: #fff7ed; stroke: #c2410c; stroke-width: 2.5; }
+      .external { fill: #f0fdf4; stroke: #15803d; stroke-width: 2.4; }
+      .process { fill: #eef6ff; stroke: #1d4ed8; stroke-width: 2.5; }
+      .process-wait { fill: #f8fafc; stroke: #64748b; stroke-width: 2.3; }
+      .process-machine { fill: #eff6ff; stroke: #2563eb; stroke-width: 2.3; }
+      .process-work { fill: #fefce8; stroke: #ca8a04; stroke-width: 2.3; }
+      .process-delivery { fill: #ecfdf5; stroke: #16a34a; stroke-width: 2.3; }
+      .store { fill: #f1f5f9; stroke: #334155; stroke-width: 2.2; }
+      .note { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.6; }
+      .label { font: 700 16px Arial, Helvetica, sans-serif; fill: #111827; }
+      .label-sm { font: 700 14px Arial, Helvetica, sans-serif; fill: #111827; }
+      .small { font: 400 13px Arial, Helvetica, sans-serif; fill: #334155; }
+      .tiny { font: 400 12px Arial, Helvetica, sans-serif; fill: #475569; }
+      .store-title { font: 700 14px Arial, Helvetica, sans-serif; fill: #0f172a; }
+      .flow { fill: none; stroke: #475569; stroke-width: 2.05; marker-end: url(#arrow); }
+      .flow-soft { fill: none; stroke: #64748b; stroke-width: 1.8; marker-end: url(#arrow-soft); stroke-dasharray: 7 6; }
+      .flow-blue { fill: none; stroke: #2563eb; stroke-width: 2.1; marker-end: url(#arrow-blue); }
+      .flow-orange { fill: none; stroke: #ea580c; stroke-width: 2.1; marker-end: url(#arrow-orange); }
+      .flow-green { fill: none; stroke: #16a34a; stroke-width: 2.1; marker-end: url(#arrow-green); }
+      .flow-yellow { fill: none; stroke: #ca8a04; stroke-width: 2.1; marker-end: url(#arrow-yellow); }
+      .flow-label { font: 600 12px Arial, Helvetica, sans-serif; fill: #1f2937; }
+      .section { fill: none; stroke: #cbd5e1; stroke-width: 1.7; stroke-dasharray: 9 7; }
+      .section-label { font: 700 13px Arial, Helvetica, sans-serif; fill: #475569; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#475569" />
+    </marker>
+    <marker id="arrow-soft" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#64748b" />
+    </marker>
+    <marker id="arrow-blue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#2563eb" />
+    </marker>
+    <marker id="arrow-orange" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#ea580c" />
+    </marker>
+    <marker id="arrow-green" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#16a34a" />
+    </marker>
+    <marker id="arrow-yellow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#ca8a04" />
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1800" height="1260" />
+  <text class="title" x="900" y="54" text-anchor="middle">Queue &amp; Order Management - Data Flow Diagram Level 3</text>
+  <text class="subtitle" x="900" y="82" text-anchor="middle">Detailed flow in admin/queue_management.php from assigning machines to delivering and completing the laundry order</text>
+
+  <!-- External actors -->
+  <rect class="entity" x="52" y="170" width="206" height="86" rx="8" />
+  <text class="label" x="155" y="203" text-anchor="middle">Admin</text>
+  <text class="small" x="155" y="228" text-anchor="middle">assigns and updates stages</text>
+
+  <rect class="entity" x="52" y="518" width="206" height="86" rx="8" />
+  <text class="label" x="155" y="551" text-anchor="middle">Staff / Rider</text>
+  <text class="small" x="155" y="576" text-anchor="middle">prepares and delivers</text>
+
+  <rect class="entity" x="52" y="842" width="206" height="86" rx="8" />
+  <text class="label" x="155" y="875" text-anchor="middle">Customer / User</text>
+  <text class="small" x="155" y="900" text-anchor="middle">receives status alerts</text>
+
+  <rect class="external" x="1484" y="142" width="238" height="86" rx="8" />
+  <text class="label" x="1603" y="175" text-anchor="middle">Machine Resources</text>
+  <text class="small" x="1603" y="200" text-anchor="middle">washer / dryer status</text>
+
+  <rect class="external" x="1484" y="666" width="238" height="86" rx="8" />
+  <text class="label" x="1603" y="699" text-anchor="middle">Delivery Address</text>
+  <text class="small" x="1603" y="724" text-anchor="middle">customer contact details</text>
+
+  <!-- System boundary -->
+  <rect class="section" x="302" y="122" width="1118" height="870" rx="16" />
+  <text class="section-label" x="326" y="149">5.0 Queue &amp; Order Management detailed process</text>
+
+  <!-- Processes -->
+  <rect class="process-wait" x="342" y="172" width="230" height="88" rx="18" />
+  <text class="label-sm" x="457" y="202" text-anchor="middle">5.1 Select Waiting</text>
+  <text class="label-sm" x="457" y="222" text-anchor="middle">Booking</text>
+  <text class="tiny" x="457" y="242" text-anchor="middle">Pending / Booked or Queued</text>
+
+  <rect class="process-machine" x="676" y="172" width="248" height="88" rx="18" />
+  <text class="label-sm" x="800" y="202" text-anchor="middle">5.2 Check Selected</text>
+  <text class="label-sm" x="800" y="222" text-anchor="middle">Machines</text>
+  <text class="tiny" x="800" y="242" text-anchor="middle">strict availability check</text>
+
+  <rect class="process-machine" x="1032" y="172" width="250" height="88" rx="18" />
+  <text class="label-sm" x="1157" y="202" text-anchor="middle">5.3 Assign Machine</text>
+  <text class="label-sm" x="1157" y="222" text-anchor="middle">and Queue</text>
+  <text class="tiny" x="1157" y="242" text-anchor="middle">stage: Queuing</text>
+
+  <rect class="process-machine" x="342" y="356" width="230" height="88" rx="18" />
+  <text class="label-sm" x="457" y="386" text-anchor="middle">5.4 Complete</text>
+  <text class="label-sm" x="457" y="406" text-anchor="middle">Queueing Timer</text>
+  <text class="tiny" x="457" y="426" text-anchor="middle">20-second AJAX transition</text>
+
+  <rect class="process-work" x="676" y="356" width="248" height="88" rx="18" />
+  <text class="label-sm" x="800" y="386" text-anchor="middle">5.5 Start Laundry</text>
+  <text class="label-sm" x="800" y="406" text-anchor="middle">In Process</text>
+  <text class="tiny" x="800" y="426" text-anchor="middle">start/end timestamps</text>
+
+  <rect class="process-work" x="1032" y="356" width="250" height="88" rx="18" />
+  <text class="label-sm" x="1157" y="386" text-anchor="middle">5.6 Track Washing</text>
+  <text class="label-sm" x="1157" y="406" text-anchor="middle">and Drying</text>
+  <text class="tiny" x="1157" y="426" text-anchor="middle">progress bars and timers</text>
+
+  <rect class="process-work" x="342" y="540" width="230" height="88" rx="18" />
+  <text class="label-sm" x="457" y="570" text-anchor="middle">5.7 Mark Ready</text>
+  <text class="label-sm" x="457" y="590" text-anchor="middle">for Pickup</text>
+  <text class="tiny" x="457" y="610" text-anchor="middle">auto when completion passes</text>
+
+  <rect class="process-delivery" x="676" y="540" width="248" height="88" rx="18" />
+  <text class="label-sm" x="800" y="570" text-anchor="middle">5.8 Move to</text>
+  <text class="label-sm" x="800" y="590" text-anchor="middle">Delivering</text>
+  <text class="tiny" x="800" y="610" text-anchor="middle">manual stage update</text>
+
+  <rect class="process-delivery" x="1032" y="540" width="250" height="88" rx="18" />
+  <text class="label-sm" x="1157" y="570" text-anchor="middle">5.9 Get Delivery</text>
+  <text class="label-sm" x="1157" y="590" text-anchor="middle">Details</text>
+  <text class="tiny" x="1157" y="610" text-anchor="middle">address, phone, email</text>
+
+  <rect class="process-delivery" x="342" y="724" width="230" height="88" rx="18" />
+  <text class="label-sm" x="457" y="754" text-anchor="middle">5.10 Confirm</text>
+  <text class="label-sm" x="457" y="774" text-anchor="middle">Delivery</text>
+  <text class="tiny" x="457" y="794" text-anchor="middle">confirm_delivery AJAX</text>
+
+  <rect class="process-delivery" x="676" y="724" width="248" height="88" rx="18" />
+  <text class="label-sm" x="800" y="754" text-anchor="middle">5.11 Complete</text>
+  <text class="label-sm" x="800" y="774" text-anchor="middle">Order</text>
+  <text class="tiny" x="800" y="794" text-anchor="middle">Completed / Picked Up</text>
+
+  <rect class="process" x="1032" y="724" width="250" height="88" rx="18" />
+  <text class="label-sm" x="1157" y="754" text-anchor="middle">5.12 Send Queue</text>
+  <text class="label-sm" x="1157" y="774" text-anchor="middle">Notifications</text>
+  <text class="tiny" x="1157" y="794" text-anchor="middle">stage-specific alerts</text>
+
+  <rect class="process" x="676" y="874" width="248" height="78" rx="18" />
+  <text class="label-sm" x="800" y="906" text-anchor="middle">5.13 Award Points</text>
+  <text class="tiny" x="800" y="929" text-anchor="middle">GCash delivery completion</text>
+
+  <!-- Data stores -->
+  <g>
+    <rect class="store" x="1482" y="286" width="242" height="52" rx="3" />
+    <line x1="1504" y1="286" x2="1504" y2="338" stroke="#334155" stroke-width="2" />
+    <text class="store-title" x="1603" y="307" text-anchor="middle">D1 Bookings</text>
+    <text class="tiny" x="1603" y="326" text-anchor="middle">stage, queue, timestamps</text>
+
+    <rect class="store" x="1482" y="372" width="242" height="52" rx="3" />
+    <line x1="1504" y1="372" x2="1504" y2="424" stroke="#334155" stroke-width="2" />
+    <text class="store-title" x="1603" y="393" text-anchor="middle">D2 Machines</text>
+    <text class="tiny" x="1603" y="412" text-anchor="middle">status, usage_count</text>
+
+    <rect class="store" x="1482" y="458" width="242" height="52" rx="3" />
+    <line x1="1504" y1="458" x2="1504" y2="510" stroke="#334155" stroke-width="2" />
+    <text class="store-title" x="1603" y="479" text-anchor="middle">D3 Users</text>
+    <text class="tiny" x="1603" y="498" text-anchor="middle">address, contact, points</text>
+
+    <rect class="store" x="1482" y="820" width="242" height="52" rx="3" />
+    <line x1="1504" y1="820" x2="1504" y2="872" stroke="#334155" stroke-width="2" />
+    <text class="store-title" x="1603" y="841" text-anchor="middle">D4 Notifications</text>
+    <text class="tiny" x="1603" y="860" text-anchor="middle">notifications</text>
+
+    <rect class="store" x="1482" y="906" width="242" height="52" rx="3" />
+    <line x1="1504" y1="906" x2="1504" y2="958" stroke="#334155" stroke-width="2" />
+    <text class="store-title" x="1603" y="927" text-anchor="middle">D5 Payment Requests</text>
+    <text class="tiny" x="1603" y="946" text-anchor="middle">gcash_requests</text>
+  </g>
+
+  <!-- Actor input flows -->
+  <path class="flow-orange" d="M258 212 C286 212 312 212 342 212" />
+  <text class="flow-label" x="302" y="198" text-anchor="middle">assign machine</text>
+
+  <path class="flow-orange" d="M258 556 C388 516 604 547 676 577" />
+  <text class="flow-label" x="468" y="532" text-anchor="middle">set stage to Delivering</text>
+
+  <path class="flow-orange" d="M258 578 C318 642 360 710 342 758" />
+  <text class="flow-label" x="295" y="690" text-anchor="start">confirm delivered</text>
+
+  <!-- Main process chain -->
+  <path class="flow-blue" d="M572 216 C606 216 640 216 676 216" />
+  <text class="flow-label" x="624" y="202" text-anchor="middle">booking + machine names</text>
+
+  <path class="flow-blue" d="M924 216 C960 216 996 216 1032 216" />
+  <text class="flow-label" x="978" y="202" text-anchor="middle">all available</text>
+
+  <path class="flow-blue" d="M1157 260 C1032 315 612 311 457 356" />
+  <text class="flow-label" x="800" y="300" text-anchor="middle">stage = Queuing (Assigning Machines)</text>
+
+  <path class="flow-blue" d="M572 400 C606 400 640 400 676 400" />
+  <text class="flow-label" x="624" y="386" text-anchor="middle">timer complete</text>
+
+  <path class="flow-yellow" d="M924 400 C960 400 996 400 1032 400" />
+  <text class="flow-label" x="978" y="386" text-anchor="middle">in process</text>
+
+  <path class="flow-yellow" d="M1157 444 C1028 502 607 497 457 540" />
+  <text class="flow-label" x="803" y="492" text-anchor="middle">estimated completion reached</text>
+
+  <path class="flow-green" d="M572 584 C606 584 640 584 676 584" />
+  <text class="flow-label" x="624" y="570" text-anchor="middle">ready order</text>
+
+  <path class="flow-green" d="M924 584 C960 584 996 584 1032 584" />
+  <text class="flow-label" x="978" y="570" text-anchor="middle">delivery modal</text>
+
+  <path class="flow-green" d="M1157 628 C1032 686 612 679 457 724" />
+  <text class="flow-label" x="802" y="678" text-anchor="middle">address loaded</text>
+
+  <path class="flow-green" d="M572 768 C606 768 640 768 676 768" />
+  <text class="flow-label" x="624" y="754" text-anchor="middle">delivered</text>
+
+  <path class="flow-blue" d="M924 768 C960 768 996 768 1032 768" />
+  <text class="flow-label" x="978" y="754" text-anchor="middle">stage change</text>
+
+  <path class="flow-blue" d="M800 812 C800 832 800 852 800 874" />
+  <text class="flow-label" x="816" y="846" text-anchor="start">if GCASH</text>
+
+  <path class="flow-blue" d="M924 913 C1036 897 1045 835 1032 790" />
+  <text class="flow-label" x="988" y="873" text-anchor="middle">points alert</text>
+
+  <!-- Store and resource flows -->
+  <path class="flow" d="M572 198 C872 126 1240 126 1484 174" />
+  <text class="flow-label" x="1028" y="133" text-anchor="middle">read selected machines</text>
+
+  <path class="flow" d="M924 198 C1120 156 1314 156 1484 184" />
+  <text class="flow-label" x="1204" y="162" text-anchor="middle">check availability</text>
+
+  <path class="flow" d="M1282 208 C1374 207 1422 199 1484 190" />
+  <text class="flow-label" x="1382" y="217" text-anchor="middle">mark unavailable</text>
+
+  <path class="flow" d="M1282 230 C1376 274 1420 304 1482 312" />
+  <text class="flow-label" x="1396" y="280" text-anchor="middle">update order_stage</text>
+
+  <path class="flow" d="M572 418 C896 376 1194 334 1482 314" />
+  <text class="flow-label" x="1012" y="355" text-anchor="middle">verify queuing stage</text>
+
+  <path class="flow" d="M924 418 C1120 382 1312 380 1482 396" />
+  <text class="flow-label" x="1200" y="385" text-anchor="middle">usage count increment</text>
+
+  <path class="flow" d="M1282 400 C1360 390 1418 390 1482 396" />
+  <text class="flow-label" x="1380" y="382" text-anchor="middle">progress read</text>
+
+  <path class="flow" d="M572 584 C884 520 1194 420 1482 398" />
+  <text class="flow-label" x="1016" y="479" text-anchor="middle">release machines</text>
+
+  <path class="flow" d="M572 604 C888 555 1196 474 1482 320" />
+  <text class="flow-label" x="1015" y="535" text-anchor="middle">status = Completed, pickup waiting</text>
+
+  <path class="flow" d="M924 584 C1110 561 1310 552 1482 492" />
+  <text class="flow-label" x="1200" y="545" text-anchor="middle">read customer contact</text>
+
+  <path class="flow-green" d="M1282 582 C1370 623 1424 672 1484 704" />
+  <text class="flow-label" x="1390" y="665" text-anchor="middle">delivery address</text>
+
+  <path class="flow" d="M924 768 C1120 744 1316 620 1482 332" />
+  <text class="flow-label" x="1210" y="706" text-anchor="middle">stage = Completed / Picked Up</text>
+
+  <path class="flow" d="M924 910 C1110 918 1308 920 1482 932" />
+  <text class="flow-label" x="1202" y="908" text-anchor="middle">check payment method</text>
+
+  <path class="flow" d="M924 930 C1120 936 1314 524 1482 490" />
+  <text class="flow-label" x="1206" y="940" text-anchor="middle">update user_points and points_claimed</text>
+
+  <path class="flow" d="M1282 768 C1360 798 1418 826 1482 846" />
+  <text class="flow-label" x="1382" y="818" text-anchor="middle">insert notification</text>
+
+  <!-- Notification feedback flows -->
+  <path class="flow-soft" d="M1482 844 C1124 878 628 891 258 886" />
+  <text class="flow-label" x="866" y="913" text-anchor="middle">Machine Assigned, In Process, Ready, Delivering, Delivered alerts</text>
+
+  <path class="flow-soft" d="M1032 746 C758 652 492 575 258 560" />
+  <text class="flow-label" x="646" y="638" text-anchor="middle">delivery confirmation response</text>
+
+  <!-- Exception / alternate flows -->
+  <path class="flow-soft" d="M676 236 C520 302 366 309 258 226" />
+  <text class="flow-label" x="456" y="303" text-anchor="middle">unavailable selected machine error</text>
+
+  <path class="flow-soft" d="M457 628 C388 694 306 776 258 864" />
+  <text class="flow-label" x="343" y="763" text-anchor="middle">ready for delivery notice</text>
+
+  <!-- Legend -->
+  <rect class="note" x="52" y="1044" width="1670" height="150" rx="8" />
+  <text class="label" x="76" y="1075">Legend and scope</text>
+  <rect class="process-wait" x="78" y="1094" width="34" height="20" rx="8" />
+  <text class="tiny" x="122" y="1109">Waiting/selection subprocess</text>
+  <rect class="process-machine" x="304" y="1094" width="34" height="20" rx="8" />
+  <text class="tiny" x="348" y="1109">Machine assignment subprocess</text>
+  <rect class="process-work" x="570" y="1094" width="34" height="20" rx="8" />
+  <text class="tiny" x="614" y="1109">Laundry processing subprocess</text>
+  <rect class="process-delivery" x="820" y="1094" width="34" height="20" rx="8" />
+  <text class="tiny" x="864" y="1109">Delivery subprocess</text>
+  <rect class="store" x="1034" y="1094" width="44" height="20" rx="2" />
+  <line x1="1042" y1="1094" x2="1042" y2="1114" stroke="#334155" stroke-width="1.5" />
+  <text class="tiny" x="1088" y="1109">Data store</text>
+  <line class="flow" x1="1230" y1="1104" x2="1302" y2="1104" />
+  <text class="tiny" x="1316" y="1109">Primary data flow</text>
+  <line class="flow-soft" x1="1468" y1="1104" x2="1540" y2="1104" />
+  <text class="tiny" x="1554" y="1109">Notification, response, or exception</text>
+  <text class="tiny" x="76" y="1144">Based on admin/queue_management.php and send_queue_notification.php. In the current code, queueing completion moves to In Process, automatic completion moves to Ready for Pickup, and Delivering is usually set through the stage update flow.</text>
+  <text class="tiny" x="76" y="1168">Key tables/fields: bookings.order_stage, machine_names, estimated_start_time, estimated_completion_time, process_started_at, process_completed_at, pickup_status, machines.status, users.address, notifications, gcash_requests.</text>
+</svg>

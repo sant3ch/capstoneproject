@@ -1,0 +1,581 @@
+/* Purple header styling */
+.hero-section h1,
+.loyalty-section h2,
+.how-it-works-section h2, 
+.how-it-works-section h3,
+.testimonial-section h2,
+
+.hero-section p {
+    color: #000000 !important;
+}
+
+.loyalty-section p,
+.how-it-works-section p,
+.testimonial-section p {
+    color: #000000 !important; 
+}
+
+.hero-section h1 {
+    color: #6f42c1 !important; 
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    text-align: left;
+    width: 100%;
+}
+
+.hero-section p {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    text-align: left; 
+    width: 100%;
+}
+
+/* Loyalty section */
+.loyalty-section h2 {
+    color: #6f42c1 !important; 
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.loyalty-section p {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    max-width: 800px;
+    margin: 0 auto 40px;
+}
+
+/* How It Works section */
+.how-it-works-section h2 {
+    color: #6f42c1 !important; 
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 50px;
+    text-align: center;
+}
+
+.how-it-works-section h3 {
+    color: #6f42c1 !important; 
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.how-it-works-section p {
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+/* Testimonial section */
+.testimonial-section h2 {
+    color: #6f42c1 !important; 
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 40px;
+}
+
+/* Subtler sideways bounce animation */
+@keyframes gentleBounceSideways {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    33% {
+        transform: translateX(-3px);
+    }
+    66% {
+        transform: translateX(3px);
+    }
+}
+
+/* Book Now button with sideways bounce animation */
+.book-now-btn {
+    background: linear-gradient(135deg, #6f42c1 0%, #8a63d2 100%);
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    animation: bounceSideways 2s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+}
+
+.book-now-btn:hover {
+    background: linear-gradient(135deg, #5a32a3 0%, #6f42c1 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(111, 66, 193, 0.3);
+    animation: none; /* Stop animation on hover */
+}
+
+/* Sideways bounce animation */
+@keyframes bounceSideways {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-5px);
+    }
+    75% {
+        transform: translateX(5px);
+    }
+}
+
+/* Optional: Add a pulsing effect to the icon */
+.book-now-btn i {
+    animation: pulseIcon 1.5s ease-in-out infinite;
+    display: inline-block;
+}
+
+@keyframes pulseIcon {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+}
+
+/* Optional: Add a shiny overlay effect */
+.book-now-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.book-now-btn:hover::before {
+    left: 100%;
+}
+
+/* Make Facebook icon black */
+.social-icon {
+    color: #000000 !important;
+    transition: color 0.3s ease;
+    text-decoration: none;
+}
+
+.social-icon:hover {
+    color: #6f42c1 !important;
+    transform: scale(1.1);
+}
+
+/* Copyright text */
+.copyright-text {
+    color: #5a32a3 !important;
+    font-size: 0.9rem;
+}
+
+/* Testimonial section styling */
+.testimonial-section .user-icon i {
+    color: #000000 !important; /* Black user icon */
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+.testimonial-section .comment-box {
+    background-color: #f8f5ff;
+    border-left: 4px solid #6f42c1;
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: #000000 !important; /* Purple text */
+    font-style: italic;
+    line-height: 1.5;
+    max-width: 300px;
+    margin: 0 auto;
+    box-shadow: 0 5px 15px rgba(111, 66, 193, 0.1);
+}
+
+.testimonial-section .comment-box::before {
+    content: '"';
+    font-size: 2rem;
+    color: #6f42c1;
+    opacity: 0.5;
+    margin-right: 5px;
+}
+
+.testimonial-section .comment-box::after {
+    content: '"';
+    font-size: 2rem;
+    color: #6f42c1;
+    opacity: 0.5;
+    margin-left: 5px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .hero-section h1 {
+        font-size: 2.5rem;
+        text-align: center; /* Center on mobile for better readability */
+    }
+    
+    .hero-section p {
+        font-size: 1rem;
+        text-align: center; /* Center on mobile */
+    }
+    
+    .loyalty-section h2,
+    .how-it-works-section h2,
+    .testimonial-section h2 {
+        font-size: 2rem;
+    }
+    
+    .how-it-works-section h3 {
+        font-size: 1.5rem;
+    }
+    
+    .book-now-btn {
+        display: block; /* Make button full width on mobile */
+        text-align: center;
+        margin: 0 auto; /* Center button on mobile */
+    }
+}
+
+/* Floating Social Media Container - Improved gray container */
+.floating-social-container {
+    position: fixed;
+    right: 20px;
+    bottom: 150px;
+    z-index: 1000;
+}
+
+.social-icons-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #6f42c1;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); /* Strong shadow for floating effect */
+    transition: all 0.3s ease;
+    width: 70px;
+    align-items: center;
+    min-height: 130px;
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border */
+}
+
+/* Expand container on hover */
+.social-icons-wrapper:hover {
+    width: 180px;
+    align-items: stretch;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); /* Enhanced shadow on hover */
+}
+
+/* Social items */
+.social-icon-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    height: 50px;
+    width: 50px;
+    padding: 0;
+}
+
+/* On hover, show full text and stretch icons */
+.social-icons-wrapper:hover .social-icon-item {
+    width: 100%;
+    padding: 10px 12px;
+    justify-content: flex-start;
+    height: auto;
+}
+
+.social-icon-item:hover {
+    background-color: rgba(255, 255, 255, 0.15); /* Light white hover */
+    transform: translateX(-3px); /* Slight movement on hover */
+}
+
+/* Icons - colored with white icons */
+.social-icon-item i {
+    font-size: 20px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    color: #333333;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Facebook icon - */
+.social-icon-item:nth-child(1) i {
+    background: #000000;
+    color: white;
+}
+
+/* Messenger icon - */
+.social-icon-item:nth-child(2) i {
+    background: #000000;
+    color: white;
+}
+
+.social-icon-item:hover i {
+    transform: scale(1.1); /* Slightly enlarge icon on hover */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Text - hidden by default */
+.social-text {
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-left: 15px;
+    opacity: 0;
+    white-space: nowrap;
+    transform: translateX(-15px);
+    transition: all 0.3s ease 0.1s;
+    color: white;
+    display: none;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Show text when container is hovered */
+.social-icons-wrapper:hover .social-text {
+    opacity: 1;
+    transform: translateX(0);
+    display: inline;
+}
+
+/* Optional: Add a subtle animation to the container */
+@keyframes floatContainer {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+.social-icons-wrapper {
+    animation: floatContainer 3s ease-in-out infinite;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .floating-social-container {
+        right: 10px;
+        bottom: 120px;
+    }
+    
+    .social-icons-wrapper {
+        width: 65px;
+        padding: 10px;
+        min-height: 125px;
+        border-radius: 10px;
+    }
+    
+    .social-icons-wrapper:hover {
+        width: 170px;
+    }
+    
+    .social-icon-item {
+        height: 48px;
+        width: 48px;
+    }
+    
+    .social-icon-item i {
+        font-size: 19px;
+        width: 34px;
+        height: 34px;
+    }
+    
+    .social-text {
+        font-size: 13px;
+        margin-left: 12px;
+    }
+}
+
+.navbar-brand img {
+height: 50px;
+}
+.nav-link {
+font-size: 18px;
+}
+.hero-section {
+display: flex;
+align-items: center;
+justify-content: center;
+flex-wrap: wrap;
+padding: 80px 20px;
+background: #f8f9fa;
+}
+.hero-text {
+flex: 1;
+max-width: 500px;
+text-align: left;
+margin-left: 50px;
+}
+.hero-text h1 {
+font-size: 3rem;
+
+}
+.hero-text p {
+font-size: 1.2rem;
+margin-bottom: 20px;
+text-align: center;
+}
+.book-now-btn {
+font-size: 1.2rem;
+padding: 12px 20px;
+border-radius: 8px;
+display: inline-flex;
+align-items: center;
+}
+.book-now-btn i {
+margin-left: 8px;
+}
+.hero-gif {
+flex: 1;
+text-align: center;
+}
+.hero-gif img {
+max-width: 100%;
+height: auto;
+}
+.loyalty-section {
+text-align: center;
+padding: 50px 20px;
+background: #f8f9fa;
+}
+.loyalty-section h2 {
+font-size: 2.5rem;
+}
+.loyalty-section p {
+font-size: 1.2rem;
+max-width: 800px;
+margin: 0 auto 20px;
+color: #555;
+}
+.loyalty-card img {
+height: 200px;
+width: 375px;
+margin-top: 20px;
+border-radius: 10px;
+box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+.loyalty-images {
+display: flex;
+justify-content: center;
+align-items: center;
+gap: 20px;
+flex-wrap: wrap;
+margin-top: 20px;
+}
+.auth-buttons {
+margin-left: auto;
+}
+.loyalty-card-container {
+display: flex;
+justify-content: center;
+align-items: center;
+gap: 20px;
+flex-wrap: wrap; 
+margin-top: 20px;
+}  
+.how-it-works-section {
+    padding: 50px 20px;
+    background-color: #f8f9fa;
+}
+.how-it-works-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 40px;
+    max-width: 1200px; /* Limit the width of the row */
+    margin-left: auto;
+    margin-right: auto; /* Center the entire row */
+}
+.how-it-works-row.reverse {
+    flex-direction: row-reverse;
+}
+.how-it-works-text {
+    flex: 1 1 400px;
+    padding: 20px;
+    text-align: center; /* Center the text inside */
+}
+.how-it-works-text h3 {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+}
+.how-it-works-text p {
+    font-size: 1.1rem;
+    color: #555;
+    max-width: 500px;
+    margin: 0 auto; /* Center paragraph content */
+}
+.how-it-works-image {
+    flex: 1 1 400px;
+    padding: 20px;
+    text-align: center;
+}
+.how-it-works-image img {
+    max-width: 400px;
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+.testimonial-section {
+    padding: 60px 20px;
+    background-color: #f8f9fa;
+    text-align: center;
+}
+.testimonial-section h2 {
+    font-size: 2.5rem;
+    margin-bottom: 40px;
+}
+.testimonial-container {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 30px;
+}
+.testimonial {
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  padding: 30px 20px;
+  width: 250px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
+  position: relative;
+}
+.testimonial:hover {
+  transform: translateY(-5px);
+}
+.user-icon {
+  font-size: 4rem;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+.user-icon:hover {
+  transform: scale(1.05);
+}
+.comment-box {
+  margin-top: 15px;
+  font-size: 1rem;
+  color: #555;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.user-icon:hover .comment-box {
+  display: block;
+  opacity: 1;
+}
