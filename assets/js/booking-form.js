@@ -291,11 +291,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Update time slots with real availability data
-    async function updateTimeSlots(selectedDate) {
+    async function updateTimeSlots(selectedDate, preserveSelection = false) {
         const timeSlotElements = document.querySelectorAll(".time-slot");
         try {
-            // Clear any previous selections
-            document.getElementById("selected_time_slot").value = "";
+            // Remember current pick; only clear it on a foreground (user) refresh
+            const prevSlot = document.getElementById("selected_time_slot").value;
+            if (!preserveSelection) {
+                document.getElementById("selected_time_slot").value = "";
+            }
 
             // Fetch availability data from the server using relative path
             const response = await fetch(`?action=get_availability&date=${selectedDate}`);
@@ -402,6 +405,20 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             });
 
+            // Background refresh: keep the user's chosen slot highlighted (or warn if it just filled)
+            if (preserveSelection && prevSlot) {
+                const chosen = Array.from(timeSlotElements).find(s => s.getAttribute('data-slot') === prevSlot);
+                if (chosen) {
+                    if (chosen.classList.contains('fully-booked')) {
+                        document.getElementById("selected_time_slot").value = "";
+                        Swal.fire({ icon: 'warning', title: 'Slot just filled up',
+                            text: `"${prevSlot}" was just fully booked. Please pick another time slot.`, timer: 4000 });
+                    } else {
+                        chosen.classList.add('selected');
+                    }
+                }
+            }
+
         } catch (error) {
             console.error("Error fetching availability:", error);
 
@@ -431,6 +448,13 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
     }
+
+    // Keep slot availability live while a date is selected (reflects walk-ins / other bookings)
+    setInterval(function () {
+        const dateEl = document.getElementById('booking_date');
+        const d = dateEl ? dateEl.value : '';
+        if (d) updateTimeSlots(d, true);
+    }, 15000);
 
     // Helper function to update slot display
     function updateSlotDisplay(slot, slotName, slotData) {

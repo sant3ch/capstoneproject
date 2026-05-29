@@ -18,48 +18,43 @@ require_once dirname(__FILE__, 2) . '/includes/admin-notifications.php';
 
 ob_end_clean();
 
-if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['status' => 'error', 'message' => 'Unauthorized access. Please login.']);
-    exit();
-}
-
-$user_id = $_SESSION['user_id'];
+require_once dirname(__FILE__, 2) . '/includes/guest-access.php';
+$user_id = $_SESSION['user_id'] ?? null;
+$guest_token = $_POST['guest_token'] ?? null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $booking_id = isset($_POST['booking_id']) ? intval($_POST['booking_id']) : 0;
     $payment_method = 'Cash on Delivery';
-    
-    error_log("Cash request received - Booking ID: {$booking_id}, User ID: {$user_id}");
-    
+
     if ($booking_id <= 0) {
         echo json_encode(['status' => 'error', 'message' => 'Invalid booking ID']);
         exit();
     }
-    
+
     try {
-        // Fetch booking details
-        $query = "
-            SELECT b.*, u.first_name, u.last_name, u.email, u.phone 
-            FROM bookings b
-            JOIN users u ON b.user_id = u.id
-            WHERE b.id = ? AND b.user_id = ?
-        ";
-        
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            throw new Exception('Failed to prepare query: ' . $conn->error);
-        }
-        
-        $stmt->bind_param("ii", $booking_id, $user_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $booking = $result->fetch_assoc();
-        $stmt->close();
-        
+        // Authorize: session owner or matching guest token
+        $booking = getBookingForViewer($conn, $booking_id, $guest_token);
         if (!$booking) {
-            error_log("Booking not found: booking_id={$booking_id}, user_id={$user_id}");
-            echo json_encode(['status' => 'error', 'message' => 'Booking not found or does not belong to you']);
+            echo json_encode(['status' => 'error', 'message' => 'Booking not found or access denied']);
             exit();
+        }
+        $user_id = $booking['user_id']; // NULL for guests
+        $booking['first_name'] = $booking['customer_first_name'] ?? '';
+        $booking['last_name']  = $booking['customer_last_name'] ?? '';
+        $booking['email']      = $booking['customer_email'] ?? '';
+        $booking['phone']      = $booking['customer_mobile'] ?? '';
+        if ($user_id) {
+            $uq = $conn->prepare("SELECT first_name, last_name, email, phone FROM users WHERE id = ?");
+            $uq->bind_param("i", $user_id);
+            $uq->execute();
+            $ur = $uq->get_result()->fetch_assoc();
+            $uq->close();
+            if ($ur) {
+                $booking['first_name'] = $booking['first_name'] ?: $ur['first_name'];
+                $booking['last_name']  = $booking['last_name']  ?: $ur['last_name'];
+                $booking['email']      = $booking['email']      ?: $ur['email'];
+                $booking['phone']      = $booking['phone']      ?: $ur['phone'];
+            }
         }
         
         // Check if cash request already pending
@@ -187,34 +182,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        // Create notification for user
-        $user_title = "Cash on Delivery Request Submitted";
-        $user_message = "Your cash on delivery request for ₱" . number_format($amount, 2) . " (Booking #$booking_id) has been submitted. Reference: $reference_number";
-        $user_link = "user-profile.php?view_payment_request=" . $request_id;
+        // Create notification for user (registered users only)
+        if ($user_id) {
+            $user_title = "Cash on Delivery Request Submitted";
+            $user_message = "Your cash on delivery request for ₱" . number_format($amount, 2) . " (Booking #$booking_id) has been submitted. Reference: $reference_number";
+            $user_link = "user-profile.php?view_payment_request=" . $request_id;
 
-        $insert_user_notif = $conn->prepare("
-            INSERT INTO notifications (
-                user_id,
-                title,
-                message,
-                link,
-                booking_id,
-                is_read,
-                created_at
-            ) VALUES (?, ?, ?, ?, ?, 0, NOW())
-        ");
+            $insert_user_notif = $conn->prepare("
+                INSERT INTO notifications (
+                    user_id,
+                    title,
+                    message,
+                    link,
+                    booking_id,
+                    is_read,
+                    created_at
+                ) VALUES (?, ?, ?, ?, ?, 0, NOW())
+            ");
 
-        if ($insert_user_notif) {
-            $insert_user_notif->bind_param(
-                "issis",
-                $user_id,
-                $user_title,
-                $user_message,
-                $user_link,
-                $booking_id
-            );
-            $insert_user_notif->execute();
-            $insert_user_notif->close();
+            if ($insert_user_notif) {
+                $insert_user_notif->bind_param(
+                    "issis",
+                    $user_id,
+                    $user_title,
+                    $user_message,
+                    $user_link,
+                    $booking_id
+                );
+                $insert_user_notif->execute();
+                $insert_user_notif->close();
+            }
         }
         
         // Update booking status to Pending

@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_id'])) {
             u.last_name,
             u.user_points
         FROM bookings b
-        JOIN users u ON b.user_id = u.id
+        LEFT JOIN users u ON b.user_id = u.id
         WHERE b.id = ?
     ";
     

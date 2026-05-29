@@ -2,6 +2,7 @@
 session_start();
 require "../../config.php";
 require_once "../../includes/auth-check.php";
+require_once "../../includes/guest-access.php";
 
 header("Content-Type: application/json");
 
@@ -24,12 +25,7 @@ function sanitize_input($data) {
 $booking_id = intval($_POST["booking_id"]);
 $payment_method = sanitize_input($_POST["payment_method"]);
 $user_id = $_SESSION["user_id"] ?? null;
-
-if (!$user_id) {
-    http_response_code(401);
-    echo json_encode(["success" => false, "message" => "User not authenticated"]);
-    exit;
-}
+$guest_token = $_POST["guest_token"] ?? null;
 
 $file = $_FILES["proof_file"];
 $allowed_types = ["image/jpeg", "image/png", "application/pdf"];
@@ -65,12 +61,12 @@ if (!move_uploaded_file($file["tmp_name"], $file_path)) {
 }
 
 try {
-    $check_query = "SELECT id FROM gcash_requests WHERE booking_id = ? AND user_id = ? AND status = \"pending\"";
+    $check_query = "SELECT id FROM gcash_requests WHERE booking_id = ? AND status = \"pending\"";
     $check_stmt = $conn->prepare($check_query);
     if (!$check_stmt) {
         throw new Exception("Prepare failed: " . $conn->error);
     }
-    $check_stmt->bind_param("ii", $booking_id, $user_id);
+    $check_stmt->bind_param("i", $booking_id);
     $check_stmt->execute();
     $existing = $check_stmt->get_result()->fetch_assoc();
     $check_stmt->close();
@@ -81,21 +77,13 @@ try {
         exit;
     }
 
-    $booking_query = "SELECT id, service_type, user_id FROM bookings WHERE id = ? AND user_id = ?";
-    $booking_stmt = $conn->prepare($booking_query);
-    if (!$booking_stmt) {
-        throw new Exception("Prepare failed: " . $conn->error);
-    }
-    $booking_stmt->bind_param("ii", $booking_id, $user_id);
-    $booking_stmt->execute();
-    $booking = $booking_stmt->get_result()->fetch_assoc();
-    $booking_stmt->close();
-    
+    $booking = getBookingForViewer($conn, $booking_id, $guest_token);
     if (!$booking) {
         unlink($file_path);
-        echo json_encode(["success" => false, "message" => "Booking not found"]);
+        echo json_encode(["success" => false, "message" => "Booking not found or access denied"]);
         exit;
     }
+    $user_id = $booking["user_id"]; // NULL for guests
 
     // Get the amount from the POST request (sent from JavaScript)
     $amount = isset($_POST["amount"]) ? floatval($_POST["amount"]) : 0;
@@ -110,18 +98,17 @@ try {
         exit;
     }
     
-    // Get user's customer name for notification
-    $user_query = "SELECT first_name, last_name FROM users WHERE id = ?";
-    $user_stmt = $conn->prepare($user_query);
-    if (!$user_stmt) {
-        throw new Exception("Prepare failed: " . $conn->error);
+    // Customer name: booking snapshot, fallback to user profile
+    $customer_name = trim(($booking["customer_first_name"] ?? "") . " " . ($booking["customer_last_name"] ?? ""));
+    if ($user_id && $customer_name === "") {
+        $user_stmt = $conn->prepare("SELECT first_name, last_name FROM users WHERE id = ?");
+        $user_stmt->bind_param("i", $user_id);
+        $user_stmt->execute();
+        $ur = $user_stmt->get_result()->fetch_assoc();
+        $user_stmt->close();
+        if ($ur) $customer_name = $ur["first_name"] . " " . $ur["last_name"];
     }
-    $user_stmt->bind_param("i", $user_id);
-    $user_stmt->execute();
-    $user_result = $user_stmt->get_result()->fetch_assoc();
-    $user_stmt->close();
-    
-    $customer_name = ($user_result) ? $user_result["first_name"] . " " . $user_result["last_name"] : "Customer";
+    if ($customer_name === "") $customer_name = "Guest";
     $reference_number = strtoupper(str_replace(" ", "-", $payment_method)) . "-" . date("Ymd") . "-" . str_pad($booking_id, 6, "0", STR_PAD_LEFT);
 
     $insert_query = "INSERT INTO gcash_requests (booking_id, user_id, customer_name, payment_method, amount, reward_id, reward_name, discount_amount, original_amount, reference_number, proof_image, status, requested_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, \"pending\", NOW())";
@@ -167,12 +154,14 @@ try {
         $cust_notif_title = $payment_method . " Payment Submitted";
         $cust_notif_message = "Your " . $payment_method . " payment for booking #" . $booking_id . " (Queue: " . $queue_code . ") has been submitted. Amount: ₱" . number_format($amount, 2) . ". Stage: " . $order_stage . ". Waiting for admin verification.";
         
-        $cust_notif_query = "INSERT INTO notifications (user_id, title, message, booking_id, is_read, created_at) VALUES (?, ?, ?, ?, 0, NOW())";
-        $cust_notif_stmt = $conn->prepare($cust_notif_query);
-        if ($cust_notif_stmt) {
-            $cust_notif_stmt->bind_param("issi", $user_id, $cust_notif_title, $cust_notif_message, $booking_id);
-            $cust_notif_stmt->execute();
-            $cust_notif_stmt->close();
+        if ($user_id) {
+            $cust_notif_query = "INSERT INTO notifications (user_id, title, message, booking_id, is_read, created_at) VALUES (?, ?, ?, ?, 0, NOW())";
+            $cust_notif_stmt = $conn->prepare($cust_notif_query);
+            if ($cust_notif_stmt) {
+                $cust_notif_stmt->bind_param("issi", $user_id, $cust_notif_title, $cust_notif_message, $booking_id);
+                $cust_notif_stmt->execute();
+                $cust_notif_stmt->close();
+            }
         }
 
         // Create admin notification

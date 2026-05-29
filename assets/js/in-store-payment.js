@@ -155,6 +155,7 @@ function submitInStorePayment() {
 
     const formData = new FormData();
     formData.append("booking_id", bookingId);
+    formData.append("guest_token", window.BOOKING_TOKEN || "");
     formData.append("payment_method", "IN_STORE");
     formData.append("amount", totalAmount.toString());
 
@@ -205,9 +206,14 @@ function submitInStorePayment() {
 
                 document.getElementById("inStoreSuccessOkBtn").addEventListener("click", function () {
                     const rewardName = document.getElementById("selectedRewardName").value;
-                    let redirectUrl = "user-profile.php";
-                    if (rewardName) {
-                        redirectUrl += "?reward_used=" + encodeURIComponent(rewardName);
+                    let redirectUrl;
+                    if (window.IS_GUEST) {
+                        redirectUrl = "booking_confirmation.php?id=" + (window.BOOKING_ID || bookingId) + "&ref=" + encodeURIComponent(window.BOOKING_TOKEN || "");
+                    } else {
+                        redirectUrl = "user-profile.php";
+                        if (rewardName) {
+                            redirectUrl += "?reward_used=" + encodeURIComponent(rewardName);
+                        }
                     }
                     window.location.href = redirectUrl;
                 });

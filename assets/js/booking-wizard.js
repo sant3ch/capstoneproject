@@ -6,7 +6,7 @@ let currentStep = 1;
 const totalSteps = 3;
 let bookingData = {
     step1: { date: '', timeSlot: '' },
-    step2: { services: [], machines: [], machineCount: 0, laundryItems: [], isSelfService: false },
+    step2: { services: [], machines: [], machineCount: 0, weight: 0, laundryItems: [], isSelfService: false },
     step3: { firstName: '', lastName: '', mobile: '', email: '', pickupAddress: '', deliveryAddress: '', pickupCoords: '', deliveryCoords: '' }
 };
 
@@ -74,10 +74,47 @@ function updateStep1Display() {
 
 // ===== STEP NAVIGATION =====
 
-function goToNextStep() {
+// Returns capacity-overflow info when the entered weight needs more than the
+// 2-machine (16 kg) limit, else null.
+function weightExceedsCapacity() {
+    const el = document.getElementById('laundry-weight');
+    const w = el ? parseFloat(el.value) : 0;
+    if (!w || w <= 0) return null;
+    const PER_LOAD = 8, MAX = 2;
+    const needed = Math.ceil(w / PER_LOAD);
+    if (needed <= MAX) return null;
+    return { weight: w, needed: needed, maxKg: PER_LOAD * MAX };
+}
+
+// Ask the user to confirm proceeding with laundry that exceeds capacity.
+// Resolves true (proceed) when there's no excess or the user confirms.
+async function confirmExcessWeight() {
+    const info = weightExceedsCapacity();
+    if (!info) return true;
+    const res = await Swal.fire({
+        icon: 'warning',
+        title: 'Laundry Exceeds Capacity',
+        html: `Your laundry is about <b>${info.weight} kg</b>, which needs <b>${info.needed} loads</b> — `
+            + `more than the <b>${info.maxKg} kg</b> (2-machine) limit for one booking.<br><br>`
+            + `Do you want to proceed with the excess? Our staff may split the extra load or it may require another visit.`,
+        showCancelButton: true,
+        confirmButtonText: 'Yes, proceed',
+        cancelButtonText: 'No, adjust weight',
+        confirmButtonColor: '#6366f1',
+        cancelButtonColor: '#94a3b8'
+    });
+    return res.isConfirmed;
+}
+
+async function goToNextStep() {
     if (validateCurrentStep()) {
         saveCurrentStepData();
-        
+
+        // Confirm before leaving Step 2 if the laundry exceeds machine capacity
+        if (currentStep === 2 && !(await confirmExcessWeight())) {
+            return;
+        }
+
         // Check if on Step 2 with self-service: show confirmation modal instead of going to Step 3
         if (currentStep === 2 && bookingData.step2.isSelfService) {
             document.getElementById('selfServiceConfirmationModal').classList.add('show');
@@ -171,6 +208,8 @@ function validateStep2() {
     const serviceType = document.getElementById('service-type');
     const machineType = document.getElementById('machine-type');
     const machineCount = document.getElementById('machine-count').value;
+    const laundryWeightEl = document.getElementById('laundry-weight');
+    const laundryWeight = laundryWeightEl ? parseFloat(laundryWeightEl.value) : 0;
 
     if (!serviceType.value || serviceType.value.length === 0) {
         showError('Please select at least one service', 'step-2-error');
@@ -194,6 +233,12 @@ function validateStep2() {
             });
             isValid = false;
         }
+    }
+
+    // Laundry weight must be set before machines can be chosen
+    if (isValid && (!laundryWeight || laundryWeight <= 0)) {
+        showError('Please enter the laundry weight (kg) before selecting a machine', 'step-2-error');
+        isValid = false;
     }
 
     if (isValid && (!machineType.value || machineType.value.length === 0)) {
@@ -327,6 +372,8 @@ function saveCurrentStepData() {
             
             const countEl = document.getElementById('machine-count');
             bookingData.step2.machineCount = countEl ? (countEl.value || 1) : 1;
+            const weightEl2 = document.getElementById('laundry-weight');
+            bookingData.step2.weight = weightEl2 ? (parseFloat(weightEl2.value) || 0) : 0;
             bookingData.step2.laundryItems = window.selectedLaundryItems ? [...window.selectedLaundryItems] : [];
             break;
         case 3:
@@ -368,7 +415,7 @@ function saveToLocalStorage() {
 function clearBookingData() {
     bookingData = {
         step1: { date: '', timeSlot: '' },
-        step2: { services: [], machines: [], machineCount: 0, laundryItems: [], isSelfService: false },
+        step2: { services: [], machines: [], machineCount: 0, weight: 0, laundryItems: [], isSelfService: false },
         step3: { firstName: '', lastName: '', mobile: '', email: '', pickupAddress: '', deliveryAddress: '', pickupCoords: '', deliveryCoords: '' }
     };
     localStorage.removeItem('bookingWizardData');
@@ -497,7 +544,12 @@ function updateButtons() {
 async function submitBooking() {
     if (validateCurrentStep()) {
         saveCurrentStepData();
-        
+
+        // Self-service submits straight from Step 2 — confirm excess weight here too
+        if (currentStep === 2 && !(await confirmExcessWeight())) {
+            return;
+        }
+
         // --- Calculate Summary & Prices ---
         const allServiceOptions = Array.from(document.querySelectorAll('#service-type option'));
         const foldServiceOpt = allServiceOptions.find(opt => opt.text.toLowerCase().includes('fold'));
@@ -551,6 +603,7 @@ async function submitBooking() {
                     <div style="margin-bottom: 10px;"><i class="fas fa-calendar-alt me-2" style="color: #6366f1;"></i> <b>Date:</b> ${bookingData.step1.date}</div>
                     <div style="margin-bottom: 10px;"><i class="fas fa-clock me-2" style="color: #6366f1;"></i> <b>Time:</b> ${bookingData.step1.timeSlot}</div>
                     <div style="margin-bottom: 10px;"><i class="fas fa-concierge-bell me-2" style="color: #6366f1;"></i> <b>Services:</b> ${selectedServicesNames.join(', ')}</div>
+                    <div style="margin-bottom: 10px;"><i class="fas fa-weight-hanging me-2" style="color: #6366f1;"></i> <b>Weight:</b> ${bookingData.step2.weight} kg (${bookingData.step2.machineCount} machine/s)</div>
                     <div style="margin-bottom: 10px;"><i class="fas fa-truck me-2" style="color: #6366f1;"></i> <b>Request:</b> ${requestedServices.join(' & ') || 'None (Drop-off)'}</div>
                     
                     <div style="background: #f1f5f9; padding: 15px; border-radius: 12px; margin: 15px 0;">
@@ -608,6 +661,7 @@ async function submitBooking() {
             service_type: finalServices,
             machine: $('#machine-type').val() || [],
             machine_count: bookingData.step2.machineCount,
+            estimated_weight: bookingData.step2.weight,
             detergent: bookingData.step2.laundryItems,
             customer_first_name: bookingData.step3.firstName,
             customer_last_name: bookingData.step3.lastName,

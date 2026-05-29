@@ -18,7 +18,7 @@ if ($source === 'payment_request') {
                      b.id as booking_id, b.booking_date, b.time_slot, b.machine_count, b.service_type, b.detergent, b.request_service, b.points_claimed, b.user_id
               FROM gcash_requests gr
               JOIN bookings b ON gr.booking_id = b.id
-              JOIN users u ON gr.user_id = u.id
+              LEFT JOIN users u ON gr.user_id = u.id
               WHERE gr.id = $transaction_id LIMIT 1";
 } else {
     // Default to transactions table

@@ -9,6 +9,7 @@ session_start();
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/admin-notifications.php';
 require_once __DIR__ . '/booking-functions.php';
+require_once __DIR__ . '/guest-access.php';
 
 function sanitize_input($data) {
     return htmlspecialchars(stripslashes(trim($data)), ENT_QUOTES, "UTF-8");
@@ -23,17 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Verify user is logged in
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-    exit;
-}
+// Registered users (session) or guests (booking token) may pay
+$guest_token = $_POST['guest_token'] ?? null;
 
 try {
     // Get POST data
     $booking_id = isset($_POST['booking_id']) ? intval($_POST['booking_id']) : null;
-    $user_id = $_SESSION['user_id'];
+    $user_id = $_SESSION['user_id'] ?? null;
     $amount = isset($_POST['amount']) ? floatval($_POST['amount']) : 0;
     $reward_id = isset($_POST['reward_id']) ? intval($_POST['reward_id']) : null;
     $reward_name = isset($_POST['reward_name']) ? sanitize_input($_POST['reward_name']) : null;
@@ -47,28 +44,26 @@ try {
         exit;
     }
 
-    // Verify booking exists and belongs to user
-    $booking_check = $conn->prepare("SELECT id, user_id FROM bookings WHERE id = ? AND user_id = ?");
-    $booking_check->bind_param("ii", $booking_id, $user_id);
-    $booking_check->execute();
-    $booking_result = $booking_check->get_result();
-
-    if ($booking_result->num_rows === 0) {
+    // Authorize: session owner or matching guest token
+    $booking = getBookingForViewer($conn, $booking_id, $guest_token);
+    if (!$booking) {
         http_response_code(404);
-        echo json_encode(['success' => false, 'error' => 'Booking not found']);
+        echo json_encode(['success' => false, 'error' => 'Booking not found or access denied']);
         exit;
     }
-    $booking_check->close();
+    $user_id = $booking['user_id']; // NULL for guests
 
-    // Get user details for notifications
-    $user_query = $conn->prepare("SELECT first_name, last_name FROM users WHERE id = ?");
-    $user_query->bind_param("i", $user_id);
-    $user_query->execute();
-    $user_result = $user_query->get_result();
-    $user = $user_result->fetch_assoc();
-    $user_query->close();
-
-    $customer_name = $user['first_name'] . ' ' . $user['last_name'];
+    // Customer name: booking snapshot, fallback to user profile
+    $customer_name = trim(($booking['customer_first_name'] ?? '') . ' ' . ($booking['customer_last_name'] ?? ''));
+    if ($user_id && $customer_name === '') {
+        $user_query = $conn->prepare("SELECT first_name, last_name FROM users WHERE id = ?");
+        $user_query->bind_param("i", $user_id);
+        $user_query->execute();
+        $u = $user_query->get_result()->fetch_assoc();
+        $user_query->close();
+        if ($u) $customer_name = $u['first_name'] . ' ' . $u['last_name'];
+    }
+    if ($customer_name === '') $customer_name = 'Guest';
 
     // Create COD payment request in gcash_requests table
     // Using gcash_requests table with payment_method='Cash on Delivery'
@@ -110,21 +105,21 @@ try {
         }
     }
 
-    // Send user notification about COD submission
-    $user_notification = $conn->prepare("
-        INSERT INTO notifications 
-        (user_id, booking_id, title, message, is_read, created_at)
-        VALUES (?, ?, ?, ?, 0, NOW())
-    ");
-    $user_title = "Cash on Delivery Order Submitted";
-    $user_message = "Your Cash on Delivery order for booking #$booking_id has been submitted. Amount: ₱" . number_format($amount, 2) . ". Awaiting admin confirmation.";
-    
-    $user_notification->bind_param("iiss", $user_id, $booking_id, $user_title, $user_message);
-    
-    if (!$user_notification->execute()) {
-        error_log("Warning: Failed to create user notification for COD payment");
+    // Send user notification about COD submission (registered users only)
+    if ($user_id) {
+        $user_notification = $conn->prepare("
+            INSERT INTO notifications
+            (user_id, booking_id, title, message, is_read, created_at)
+            VALUES (?, ?, ?, ?, 0, NOW())
+        ");
+        $user_title = "Cash on Delivery Order Submitted";
+        $user_message = "Your Cash on Delivery order for booking #$booking_id has been submitted. Amount: ₱" . number_format($amount, 2) . ". Awaiting admin confirmation.";
+        $user_notification->bind_param("iiss", $user_id, $booking_id, $user_title, $user_message);
+        if (!$user_notification->execute()) {
+            error_log("Warning: Failed to create user notification for COD payment");
+        }
+        $user_notification->close();
     }
-    $user_notification->close();
 
     // Return success response
     http_response_code(200);

@@ -119,8 +119,8 @@ $confirmed_bookings = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM bookin
 $bookings = mysqli_query($conn, "
     SELECT
         b.id,
-        u.first_name,
-        u.last_name,
+        COALESCE(b.customer_first_name, u.first_name) AS first_name,
+        COALESCE(b.customer_last_name, u.last_name) AS last_name,
         b.booking_date,
         b.time_slot,
         b.status,
@@ -131,7 +131,7 @@ $bookings = mysqli_query($conn, "
         COALESCE(gr.payment_method, '') as payment_method,
         COALESCE(b.final_amount, t.total_amount, gr.amount, 0) as processed_amount
     FROM bookings b
-    JOIN users u ON b.user_id = u.id
+    LEFT JOIN users u ON b.user_id = u.id
     LEFT JOIN transactions t ON b.id = t.booking_id
     LEFT JOIN gcash_requests gr ON b.id = gr.booking_id 
         AND gr.id = (
@@ -184,11 +184,18 @@ $bookings = mysqli_query($conn, "
                         <i class="fas fa-cogs"></i> Management
                     </a>
                     <ul class="collapse show list-unstyled ps-4" id="managementMenu">
+                        <li><a class="nav-link py-1" href="manage_services.php"><i class="fas fa-tags me-2"></i> Services &amp; Pricing</a></li>
+                        <li><a class="nav-link py-1" href="manage_blog.php"><i class="fas fa-newspaper me-2"></i> Blog / News</a></li>
+                        <li><a class="nav-link py-1" href="manage_about.php"><i class="fas fa-info-circle me-2"></i> About Page</a></li>
+                        <li><a class="nav-link py-1" href="manage_testimonials.php"><i class="fas fa-comment-dots me-2"></i> Testimonials</a></li>
+                        <li><a class="nav-link py-1" href="manage_why_choose_us.php"><i class="fas fa-thumbs-up me-2"></i> Why Choose Us</a></li>
                         <li><a class="nav-link py-1" href="manage_users.php"><i class="fas fa-user me-2"></i> Registered Users</a></li>
                         <li><a class="nav-link py-1" href="manage_machines.php"><i class="fas fa-tools me-2"></i> Machine Management</a></li>
                         <li><a class="nav-link py-1" href="manage_inventory.php"><i class="fas fa-box me-2"></i> Inventory Management</a></li>
                         <li><a class="nav-link py-1 active" href="booking_schedules.php"><i class="fas fa-calendar-alt me-2"></i> Booked Schedules</a></li>
+                        <li><a class="nav-link py-1" href="completion_calendar.php"><i class="fas fa-calendar-check me-2"></i> Completion Calendar</a></li>
                          <li><a class="nav-link py-1" href="queue_management.php"><i class="fas fa-people-arrows me-2"></i> Queue Management</a></li>
+                        <li><a class="nav-link py-1" href="manage_walkins.php"><i class="fas fa-user-plus me-2"></i> Walk-in Customers</a></li>
                          <li><a class="nav-link py-1" href="payment_requests-management.php"><i class="fas fa-money-bill-wave me-2"></i> Payment Requests</a></li>
                         <li><a class="nav-link py-1" href="claimed_rewards.php"><i class="fas fa-gift me-2"></i> Claimed Rewards</a></li>
                         <li><a class="nav-link py-1" href="admin_notifications.php"><i class="fas fa-bell me-2"></i> Notifications</a></li>

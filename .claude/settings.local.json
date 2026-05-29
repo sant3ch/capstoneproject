@@ -4,7 +4,12 @@
       "Bash(mysql -u root jorishlaundry -e \"SHOW TABLES;\")",
       "Bash(mysql -u root jorishlaundry -e \"DESCRIBE services;\")",
       "Bash(mysql -u root jorishlaundry -e \"SELECT * FROM services LIMIT 10;\")",
-      "Bash(php -r ' *)"
+      "Bash(php -r ' *)",
+      "Bash(awk '/CREATE TABLE `services`/,/;/' jorishlaundry_database.sql)",
+      "Bash(grep -i \"INSERT INTO \\\\`services\\\\`\" jorishlaundry_database.sql)",
+      "Bash(grep -A20 \"INSERT INTO \\\\`services\\\\`\" jorishlaundry_database.sql)",
+      "Bash(Get-ChildItem -Path \"C:\\\\laragon\\\\www\\\\capstoneproject\\\\admin\" -Recurse)",
+      "Bash(Select-Object FullName)"
     ]
   }
 }

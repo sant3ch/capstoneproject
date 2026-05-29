@@ -37,7 +37,7 @@ if (isset($_SESSION['user_id'])) {
     <li><a href="service-and-pricing.php">Services</a></li>
     <li><a href="contact-and-map-view.php" class="active">Find Location</a></li>
 
-    <li><a href="index.php#news">Blog</a></li>
+    <li><a href="blog.php">Blog</a></li>
   </ul>
   <div class="jl-nav-right">
     <?php if (isset($_SESSION['user_id'])): ?>
@@ -207,7 +207,7 @@ if (isset($_SESSION['user_id'])) {
       <li><a href="service-and-pricing.php">Services</a></li>
       <li><a href="contact-and-map-view.php">Find Location</a></li>
 
-      <li><a href="index.php#news">Blog</a></li>
+      <li><a href="blog.php">Blog</a></li>
     </ul>
     <div class="footer-social">
       <a href="https://www.facebook.com/profile.php?id=100064010053494" target="_blank"><i class="fab fa-facebook-f"></i></a>

@@ -25,7 +25,7 @@ $debug_query = "
         COALESCE(t.total_amount, gr.amount, 0) as 'current_displayed_amount',
         gr.id as 'latest_gcash_id'
     FROM bookings b
-    JOIN users u ON b.user_id = u.id
+    LEFT JOIN users u ON b.user_id = u.id
     LEFT JOIN transactions t ON b.id = t.booking_id
     LEFT JOIN gcash_requests gr ON b.id = gr.booking_id 
         AND gr.status IN ('approved', 'completed', 'pending')

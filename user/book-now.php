@@ -6,7 +6,8 @@ session_start();
 // Include configuration and helper files
 require '../config.php';
 require '../includes/auth-check.php';
-requireLogin();
+// Guests (unregistered customers) may book too — no requireLogin().
+$isGuest = !isset($_SESSION['user_id']);
 require '../includes/booking-data.php';
 require '../includes/api-handlers.php';
 require '../includes/holiday-utils.php';
@@ -847,10 +848,24 @@ $booked_dates = getBookedDatesForCalendar($conn);
                     
                     <!-- Machine Selection Column -->
                     <div class="col-md-6">
-                        <!-- Machine to Use Section -->
+                        <!-- Laundry Weight Section (must be set before choosing machines) -->
                         <div class="mb-4">
+                            <h4>Laundry Weight</h4>
+                            <div class="input-group">
+                                <input type="number" id="laundry-weight" class="form-control" min="0.5" step="0.5" placeholder="Enter estimated weight" required>
+                                <span class="input-group-text">kg</span>
+                            </div>
+                            <small class="text-muted">Each load holds up to 8&nbsp;kg. Enter the weight to unlock machine selection.</small>
+                            <div id="weight-capacity-note" class="text-warning mt-2" style="display:none;font-size:.85rem;">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                <span id="weight-capacity-text"></span>
+                            </div>
+                        </div>
+
+                        <!-- Machine to Use Section -->
+                        <div class="mb-4" id="machine-section">
                             <h4>Machines</h4>
-                            <select id="machine-type" name="machine_type[]" class="form-control" multiple="multiple" style="width: 100%;" required>
+                            <select id="machine-type" name="machine_type[]" class="form-control" multiple="multiple" style="width: 100%;" required disabled>
                                 
                                 <?php if (!empty($washers)): ?>
                                     <optgroup label="Washers">
@@ -885,11 +900,11 @@ $booked_dates = getBookedDatesForCalendar($conn);
                             <small class="text-muted">Select one or more machines</small>
                         </div>
                         
-                        <!-- Number of Machines Section -->
+                        <!-- Number of Machines Section (auto-calculated from weight) -->
                         <div class="mb-4">
                             <h4>No. of Machines</h4>
-                            <input type="number" id="machine-count" class="form-control" min="1" max="2" value="1" placeholder="Enter number of machines" required>
-                            <small class="text-muted">Max: 2 machines per booking</small>
+                            <input type="number" id="machine-count" class="form-control" min="1" max="2" value="1" placeholder="Set laundry weight first" required readonly>
+                            <small class="text-muted">Auto-calculated from weight (8&nbsp;kg per load). Max: 2 machines per booking.</small>
                         </div>
                     </div>
                 </div>
@@ -919,6 +934,35 @@ $booked_dates = getBookedDatesForCalendar($conn);
 
             <!-- STEP 3: Delivery Details -->
             <div class="booking-step" id="step-3-content" style="display: none;">
+                <?php if ($isGuest): ?>
+                <!-- Guest contact details (required when not logged in) -->
+                <div class="mb-4">
+                    <h5>Your Details</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="step3-first-name" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="step3-first-name" placeholder="First name">
+                            <small class="text-danger d-none" id="error-first-name">First name is required</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="step3-last-name" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="step3-last-name" placeholder="Last name">
+                            <small class="text-danger d-none" id="error-last-name">Last name is required</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="step3-mobile" class="form-label">Mobile Number</label>
+                            <input type="tel" class="form-control" id="step3-mobile" placeholder="09xxxxxxxxx">
+                            <small class="text-danger d-none" id="error-mobile">Valid mobile number is required</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="step3-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="step3-email" placeholder="you@email.com">
+                            <small class="text-danger d-none" id="error-email">Valid email address is required</small>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block mt-2">We'll use these to identify your booking. No account needed.</small>
+                </div>
+                <?php endif; ?>
                 <!-- Request Service Section -->
                 <div class="mb-4">
                     <h5>Additional Services</h5>
@@ -1193,6 +1237,97 @@ $booked_dates = getBookedDatesForCalendar($conn);
         footerEl.style.display = 'block';
     }
 
+    /* ── Machine availability driven by selected services ───────────────── */
+    // Map selected service names to the machine types they require.
+    // Keyword-based so it also works for newly added custom services.
+    function machineTypesForServices(services) {
+        const set = new Set();
+        (services || []).forEach(s => {
+            const n = (s || '').toLowerCase();
+            if (n.includes('full') || (n.includes('wash') && n.includes('dry'))) {
+                set.add('washer'); set.add('dryer');
+            } else if (n.includes('wash')) {
+                set.add('washer');
+            } else if (n.includes('dry')) {
+                set.add('dryer');
+            }
+            // services with no wash/dry keyword (e.g. Fold, Ironing) require no machine
+        });
+        return set;
+    }
+
+    // Enable only the machine types relevant to the chosen services; clear picks
+    // that are no longer valid. If no machine-using service is selected, leave all
+    // machines enabled (don't hard-block).
+    function filterMachinesByService() {
+        const machineSel = document.getElementById('machine-type');
+        if (!machineSel) return;
+
+        const services = $('#service-type').val() || [];
+        const allowed  = machineTypesForServices(services);
+        const restrict = allowed.size > 0;
+
+        let removedSelected = false;
+        Array.from(machineSel.options).forEach(opt => {
+            const type = (opt.getAttribute('data-machinetype') || '').toLowerCase();
+            const disable = restrict && type && !allowed.has(type);
+            opt.disabled = disable;
+            if (disable && opt.selected) {
+                opt.selected = false;
+                removedSelected = true;
+            }
+        });
+
+        // Re-render select2 tags + dropdown to reflect the new enabled/disabled set
+        $(machineSel).trigger('change.select2');
+        if (removedSelected) {
+            $(machineSel).trigger('change');
+        }
+    }
+
+    /* ── Laundry weight gates + auto-calculates machines ────────────────── */
+    const PER_LOAD_KG = 8;   // each machine load holds up to 8 kg
+    const MAX_MACHINES = 2;  // bookings are capped at 2 machines
+
+    function updateMachineGating() {
+        const weightEl   = document.getElementById('laundry-weight');
+        const machineSel = document.getElementById('machine-type');
+        const countEl    = document.getElementById('machine-count');
+        const note       = document.getElementById('weight-capacity-note');
+        const noteText   = document.getElementById('weight-capacity-text');
+        if (!weightEl || !machineSel || !countEl) return;
+
+        const weight    = parseFloat(weightEl.value);
+        const hasWeight = !isNaN(weight) && weight > 0;
+
+        if (hasWeight) {
+            const neededLoads = Math.ceil(weight / PER_LOAD_KG);
+            const machines    = Math.min(MAX_MACHINES, neededLoads);
+
+            // Auto-calculated, locked machine count
+            countEl.value = machines;
+
+            // Unlock machine selection, then re-apply the service-based filter
+            $(machineSel).prop('disabled', false);
+            filterMachinesByService();
+
+            // Warn (but allow) when the load exceeds 2-machine capacity
+            if (neededLoads > MAX_MACHINES) {
+                noteText.textContent = `About ${neededLoads} loads (~${weight} kg) needed, but bookings are capped at ${MAX_MACHINES} machines. Our staff may split larger loads or you may need another visit.`;
+                note.style.display = 'block';
+            } else {
+                note.style.display = 'none';
+            }
+        } else {
+            // No weight yet → keep machine selection locked
+            countEl.value = '';
+            Array.from(machineSel.options).forEach(o => { o.selected = false; });
+            $(machineSel).prop('disabled', true).trigger('change.select2').trigger('change');
+            if (note) note.style.display = 'none';
+        }
+        calcPrice();
+    }
+
     function addLaundryItem() {
         const select = document.getElementById('laundry-item-select');
         const qtyInput = document.getElementById('laundry-item-qty');
@@ -1224,22 +1359,30 @@ $booked_dates = getBookedDatesForCalendar($conn);
         const selectedOption = select.options[select.selectedIndex];
         const availableStock = parseInt(selectedOption.dataset.stock) || 0;
 
-        if (quantity > availableStock) {
+        // Merge with an existing entry of the same item instead of stacking duplicate badges
+        const existing = window.selectedLaundryItems.find(i => i.name === itemName);
+        const combinedQty = (existing ? existing.qty : 0) + quantity;
+
+        if (combinedQty > availableStock) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Insufficient Stock',
-                text: `Only ${availableStock} units available for ${itemName}.`,
+                text: `Only ${availableStock} units available for ${itemName}` +
+                      (existing ? ` (you already added ${existing.qty}).` : '.'),
                 confirmButtonText: 'OK'
             });
             return;
         }
 
-        // Add to selected items (allow duplicates with different or same quantities)
-        window.selectedLaundryItems.push({
-            name: itemName,
-            qty: quantity,
-            timestamp: Date.now() // Unique identifier for removing duplicates
-        });
+        if (existing) {
+            existing.qty = combinedQty; // bump quantity on the same badge
+        } else {
+            window.selectedLaundryItems.push({
+                name: itemName,
+                qty: quantity,
+                timestamp: Date.now() // Unique identifier for removing
+            });
+        }
 
         // Update display
         updateLaundryDisplay();
@@ -1334,18 +1477,30 @@ $booked_dates = getBookedDatesForCalendar($conn);
         // Listen for service changes to detect self-service and update buttons
         $('#service-type').on('change', function() {
             const selectedServices = $(this).val() || [];
-            const isSelfService = selectedServices.some(service => 
+            const isSelfService = selectedServices.some(service =>
                 service.toLowerCase().includes('self-service') || service.toLowerCase().includes('self service')
             );
-            
+
             // Update booking data and button display
             bookingData.step2.isSelfService = isSelfService;
             updateButtons();
-            
+
+            // Restrict machine choices to the types the selected services need
+            filterMachinesByService();
+
             // Update confirmation modal with current selections
             updateSelfServiceConfirmationModal();
         });
+
+        // Laundry weight must be set before machines unlock; it also auto-calcs count
+        const weightInput = document.getElementById('laundry-weight');
+        if (weightInput) {
+            weightInput.addEventListener('input', updateMachineGating);
+            weightInput.addEventListener('change', updateMachineGating);
+        }
+
         calcPrice(); // initial render
+        updateMachineGating(); // initial machine gating (locks until weight entered)
     });
 
     $(document).ready(function() {

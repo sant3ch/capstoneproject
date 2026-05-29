@@ -2,6 +2,14 @@
 session_start();
 
 require 'config.php';
+require_once 'includes/content-helpers.php';
+
+// Admin-managed About page content
+$about_title   = getSetting($conn, 'about_title', 'ABOUT US');
+$about_tagline = getSetting($conn, 'about_tagline', 'Your Trusted Partner in Laundry Care');
+$about_desc    = getSetting($conn, 'about_description', 'We are professionals and are committed to providing quality laundry and dry cleaning services.');
+$about_image   = getSetting($conn, 'about_image', 'assets/images/aboutus.png');
+$core_values   = getCoreValues($conn);
 
 // Fetch notifications if logged in
 $notifications = [];
@@ -40,7 +48,7 @@ if (isset($_SESSION['user_id'])) {
     <li><a href="service-and-pricing.php">Services</a></li>
     <li><a href="contact-and-map-view.php">Find Location</a></li>
     <li><a href="aboutus.php" class="active">About Us</a></li>
-    <li><a href="index.php#news">Blog</a></li>
+    <li><a href="blog.php">Blog</a></li>
   </ul>
   <div class="jl-nav-right">
     <?php if (isset($_SESSION['user_id'])): ?>
@@ -102,18 +110,16 @@ if (isset($_SESSION['user_id'])) {
         <div class="about-content-row">
             <!-- Left Side: Image -->
             <div class="about-image-section">
-                <img src="./assets/images/aboutus.png" alt="About Jorish Express Laundry" class="about-main-image">
+                <img src="./<?php echo htmlspecialchars($about_image); ?>" alt="About Jorish Express Laundry" class="about-main-image" onerror="this.src='./assets/images/aboutus.png'">
                 <p class="image-caption">Professional Laundry Services</p>
             </div>
-            
+
             <!-- Right Side: About Text -->
             <div class="about-text-section">
-                <h1 class="about-title">ABOUT US</h1>
-                <h2 class="about-tagline">Your Trusted Partner in Laundry Care</h2>
+                <h1 class="about-title"><?php echo htmlspecialchars($about_title); ?></h1>
+                <h2 class="about-tagline"><?php echo htmlspecialchars($about_tagline); ?></h2>
                 <p class="about-description">
-                    We are professionals and are committed to providing quality laundry and dry cleaning services. 
-                    With years of experience and dedication, we ensure that every garment receives the care and 
-                    attention it deserves.
+                    <?php echo nl2br(htmlspecialchars($about_desc)); ?>
                 </p>
             </div>
         </div>
@@ -123,32 +129,17 @@ if (isset($_SESSION['user_id'])) {
     <div class="about-second-container">
         <h2 class="features-title">Our Core Values</h2>
         <div class="features-grid">
-            <!-- Personalized Experience -->
+            <?php if (count($core_values) > 0): foreach ($core_values as $v): ?>
             <div class="feature-card">
                 <div class="feature-icon">
-                    <i class="fas fa-headset"></i>
+                    <i class="<?php echo htmlspecialchars($v['icon_class']); ?>"></i>
                 </div>
-                <h3>Personalized Experience</h3>
-                <p>You can always reach us for your laundry concerns. Call or message us - we are happy to help!</p>
+                <h3><?php echo htmlspecialchars($v['title']); ?></h3>
+                <p><?php echo nl2br(htmlspecialchars($v['description'])); ?></p>
             </div>
-            
-            <!-- Quality -->
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-award"></i>
-                </div>
-                <h3>Quality</h3>
-                <p>We take utmost care of your clothes, segregating whites and colored clothes. We use gentle yet effective detergents to ensure they won't damage your fabrics.</p>
-            </div>
-            
-            <!-- Convenience -->
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-mobile-alt"></i>
-                </div>
-                <h3>Convenience</h3>
-                <p>We simplify the booking request. Simply book through our in-app store via Facebook Messenger and we'll handle your laundry seamlessly.</p>
-            </div>
+            <?php endforeach; else: ?>
+            <p class="text-center text-muted">No core values to display yet.</p>
+            <?php endif; ?>
         </div>
     
         <!-- Book Now Button -->

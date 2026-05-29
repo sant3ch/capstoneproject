@@ -163,6 +163,59 @@ function getNotifications($conn, $userId) {
     return $notifications;
 }
 
+/* ── Walk-in machine usage (reduces availability for online bookings) ──── */
+
+function walkinTableExists($conn) {
+    static $exists = null;
+    if ($exists === null) {
+        $r = @mysqli_query($conn, "SHOW TABLES LIKE 'walkin_reservations'");
+        $exists = $r && mysqli_num_rows($r) > 0;
+    }
+    return $exists;
+}
+
+// Walk-in washer/dryer usage for one date, keyed by time slot.
+function getWalkinUsageForDate($conn, $date) {
+    $usage = [];
+    if (!walkinTableExists($conn)) return $usage;
+    $stmt = mysqli_prepare($conn, "
+        SELECT time_slot,
+               COALESCE(SUM(washers_used),0) AS w,
+               COALESCE(SUM(dryers_used),0)  AS d
+        FROM walkin_reservations
+        WHERE booking_date = ? AND status <> 'Cancelled'
+        GROUP BY time_slot");
+    if (!$stmt) return $usage;
+    mysqli_stmt_bind_param($stmt, "s", $date);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($row = mysqli_fetch_assoc($res)) {
+        $usage[$row['time_slot']] = ['washers' => (int)$row['w'], 'dryers' => (int)$row['d']];
+    }
+    mysqli_stmt_close($stmt);
+    return $usage;
+}
+
+// Walk-in usage across all dates, keyed by date then time slot (for the calendar).
+function getWalkinUsageAllDates($conn) {
+    $usage = [];
+    if (!walkinTableExists($conn)) return $usage;
+    $res = @mysqli_query($conn, "
+        SELECT booking_date, time_slot,
+               COALESCE(SUM(washers_used),0) AS w,
+               COALESCE(SUM(dryers_used),0)  AS d
+        FROM walkin_reservations
+        WHERE status <> 'Cancelled'
+        GROUP BY booking_date, time_slot");
+    if ($res) {
+        while ($row = mysqli_fetch_assoc($res)) {
+            $usage[$row['booking_date']][$row['time_slot']] =
+                ['washers' => (int)$row['w'], 'dryers' => (int)$row['d']];
+        }
+    }
+    return $usage;
+}
+
 function getBookedMachinesForDate($conn, $date, $time_slot) {
     $booked_machines = [
         'washers' => 0,
@@ -193,7 +246,14 @@ function getBookedMachinesForDate($conn, $date, $time_slot) {
         }
         mysqli_stmt_close($query);
     }
-    
+
+    // Include walk-in usage for this slot
+    $wu = getWalkinUsageForDate($conn, $date);
+    if (isset($wu[$time_slot])) {
+        $booked_machines['washers'] += $wu[$time_slot]['washers'];
+        $booked_machines['dryers']  += $wu[$time_slot]['dryers'];
+    }
+
     return $booked_machines;
 }
 
@@ -232,11 +292,18 @@ function getAvailabilityForSlot($conn, $date, $time_slot) {
         }
         mysqli_stmt_close($query);
     }
-    
+
+    // Subtract walk-in usage for this slot
+    $wu = getWalkinUsageForDate($conn, $date);
+    if (isset($wu[$time_slot])) {
+        $availability['available_washers'] -= $wu[$time_slot]['washers'];
+        $availability['available_dryers']  -= $wu[$time_slot]['dryers'];
+    }
+
     // Ensure we don't have negative numbers
     $availability['available_washers'] = max(0, $availability['available_washers']);
     $availability['available_dryers'] = max(0, $availability['available_dryers']);
-    
+
     return $availability;
 }
 
@@ -281,7 +348,22 @@ function getBookedDatesForCalendar($conn) {
         }
         mysqli_stmt_close($query);
     }
-    
+
+    // Merge walk-in usage into the calendar availability
+    $walkin_all = getWalkinUsageAllDates($conn);
+    foreach ($walkin_all as $wdate => $slots) {
+        foreach ($slots as $wslot => $u) {
+            if (!isset($available_machines[$wdate][$wslot])) {
+                $available_machines[$wdate][$wslot] = [
+                    'washers' => $total_machines['washers'],
+                    'dryers'  => $total_machines['dryers'],
+                ];
+            }
+            $available_machines[$wdate][$wslot]['washers'] -= $u['washers'];
+            $available_machines[$wdate][$wslot]['dryers']  -= $u['dryers'];
+        }
+    }
+
     return $available_machines;
 }
 
@@ -411,6 +493,14 @@ function getDetailedDateAvailability($conn, $date) {
 
     mysqli_stmt_close($stmt);
     error_log("Processed $booking_count bookings for date $date");
+
+    // Fold in walk-in usage (reduces availability the same as online bookings)
+    $walkin_usage = getWalkinUsageForDate($conn, $date);
+    foreach ($walkin_usage as $slot => $u) {
+        if (!isset($booked_by_type[$slot])) continue;
+        $booked_by_type[$slot]['washers'] += $u['washers'];
+        $booked_by_type[$slot]['dryers']  += $u['dryers'];
+    }
 
     // Compute availability
     $availability = [];

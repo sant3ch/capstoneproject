@@ -1,6 +1,13 @@
 <?php
 session_start();
 require 'config.php';
+require_once 'includes/content-helpers.php';
+
+// Admin-managed homepage content
+$why_intro    = getSetting($conn, 'home_why_intro', 'At Jorish Express Laundry, we understand that you have many options when it comes to laundry services.');
+$why_items    = getWhyItems($conn);
+$testimonials = getActiveTestimonials($conn);
+$blog_posts   = getPublishedPosts($conn, 3);
 
 $notifications = [];
 if (isset($_SESSION['user_id'])) {
@@ -38,7 +45,7 @@ if (isset($_SESSION['user_id'])) {
     <li><a href="service-and-pricing.php">Services</a></li>
     <li><a href="contact-and-map-view.php">Find Location</a></li>
 
-    <li><a href="#news">Blog</a></li>
+    <li><a href="blog.php">Blog</a></li>
   </ul>
 
   <div class="jl-nav-right">
@@ -128,7 +135,7 @@ if (isset($_SESSION['user_id'])) {
     <?php if (isset($_SESSION['user_id'])): ?>
       <a href="user/book-now.php" class="btn-jl btn-jl-orange">Book Now! &rarr;</a>
     <?php else: ?>
-      <a href="login.php" class="btn-jl btn-jl-orange">Get Started &rarr;</a>
+      <a href="user/book-now.php" class="btn-jl btn-jl-orange">Get Started &rarr;</a>
     <?php endif; ?>
     <div class="hero-social">
       <div class="hero-avatars">
@@ -204,7 +211,7 @@ if (isset($_SESSION['user_id'])) {
 <section class="jl-section why-section" id="why">
   <div class="jl-title">
     <h2>Why <span>Choose Us</span></h2>
-    <p>At Jorish Express Laundry, we understand that you have many options when it comes to laundry services.</p>
+    <p><?php echo htmlspecialchars($why_intro); ?></p>
   </div>
   <div class="why-inner">
     <div class="why-center">
@@ -212,19 +219,15 @@ if (isset($_SESSION['user_id'])) {
         <i class="fas fa-tshirt"></i>
       </div>
     </div>
-    <div class="why-bubble wb-1"><i class="fas fa-award"></i>Expertise and Experience</div>
-    <div class="why-bubble wb-2"><i class="fas fa-clock"></i>Timely Service</div>
-    <div class="why-bubble wb-3"><i class="fas fa-smile"></i>Customer Satisfaction</div>
-    <div class="why-bubble wb-4 orange"><i class="fas fa-star"></i>Exceptional Quality</div>
-    <div class="why-bubble wb-5 orange"><i class="fas fa-concierge-bell"></i>Convenience</div>
-    <div class="why-bubble wb-6"><i class="fas fa-heart"></i>Personalized Care</div>
-    <div class="why-bubble wb-7 orange"><i class="fas fa-tag"></i>Transparent Pricing</div>
+    <?php foreach ($why_items as $i => $w): $pos = ($i % 7) + 1; ?>
+    <div class="why-bubble wb-<?php echo $pos; ?><?php echo $w['accent'] === 'orange' ? ' orange' : ''; ?>"><i class="<?php echo htmlspecialchars($w['icon_class']); ?>"></i><?php echo htmlspecialchars($w['label']); ?></div>
+    <?php endforeach; ?>
   </div>
   <div class="why-cta">
     <?php if (isset($_SESSION['user_id'])): ?>
       <a href="user/book-now.php" class="btn-jl btn-jl-orange">Book Now &rarr;</a>
     <?php else: ?>
-      <a href="login.php" class="btn-jl btn-jl-orange">Get Started &rarr;</a>
+      <a href="user/book-now.php" class="btn-jl btn-jl-orange">Get Started &rarr;</a>
     <?php endif; ?>
   </div>
 </section>
@@ -235,35 +238,31 @@ if (isset($_SESSION['user_id'])) {
     <h2>Our Customers <span>Feedback</span></h2>
     <p>What our happy customers say about us</p>
   </div>
+  <?php if (count($testimonials) > 0): ?>
   <div class="testi-grid">
+    <?php $avColors = ['#818cf8', '#6366f1', '#f5a623', '#e08f0a']; foreach ($testimonials as $i => $t):
+      $initials = $t['initials'] !== '' ? $t['initials'] : strtoupper(substr($t['author_name'], 0, 2)); ?>
     <div class="testi-card">
       <div class="quote">&ldquo;</div>
-      <p>I can't thank <strong>Jorish Express</strong> enough for their impeccable service. My clothes have never looked better, and the convenience of booking online is absolutely a lifesaver!</p>
+      <p><?php echo nl2br(htmlspecialchars($t['quote'])); ?></p>
       <div class="testi-author">
-        <div class="testi-av">MR</div>
+        <div class="testi-av" style="background:<?php echo $avColors[$i % count($avColors)]; ?>;"><?php echo htmlspecialchars($initials); ?></div>
         <div class="testi-name">
-          <h4>Maria Reyes</h4>
-          <div class="testi-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <h4><?php echo htmlspecialchars($t['author_name']); ?></h4>
+          <div class="testi-stars"><?php echo str_repeat('&#9733;', max(1, (int)$t['rating'])); ?></div>
         </div>
       </div>
     </div>
-    <div class="testi-card">
-      <div class="quote">&ldquo;</div>
-      <p>I've been using <strong>Jorish Express</strong> for months now, and I'm consistently impressed by their attention to detail and commitment to customer satisfaction. The loyalty rewards are a great bonus!</p>
-      <div class="testi-author">
-        <div class="testi-av" style="background:#6366f1;">JC</div>
-        <div class="testi-name">
-          <h4>Juan Cruz</h4>
-          <div class="testi-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-        </div>
-      </div>
-    </div>
+    <?php endforeach; ?>
   </div>
   <div class="testi-dots">
-    <span class="active"></span>
-    <span></span>
-    <span></span>
+    <?php for ($i = 0; $i < count($testimonials); $i++): ?>
+    <span<?php echo $i === 0 ? ' class="active"' : ''; ?>></span>
+    <?php endfor; ?>
   </div>
+  <?php else: ?>
+  <p class="text-center text-muted">No reviews yet.</p>
+  <?php endif; ?>
 </section>
 
 <!-- ====== WORKING PROCESS ====== -->
@@ -361,49 +360,33 @@ if (isset($_SESSION['user_id'])) {
 <section class="jl-section news-section" id="news">
   <div class="news-header">
     <h2>Read Our <span>Latest News</span></h2>
-    <a href="#" class="btn-jl btn-jl-outline">Visit Our Blog</a>
+    <a href="blog.php" class="btn-jl btn-jl-outline">Visit Our Blog</a>
   </div>
   <div class="news-grid">
-
-    <div class="news-card">
-      <div class="news-img" style="background:linear-gradient(135deg,#e0e7ff,#a5b4fc);">
-        <img src="https://images.unsplash.com/photo-1585421514284-efb74c2b69ba?w=500&q=70" alt="Laundry Tips"
-          onerror="this.style.display='none'">
-        <span class="news-tag">Tips</span>
+    <?php
+    $newsGradients = [
+      'linear-gradient(135deg,#e0e7ff,#a5b4fc)',
+      'linear-gradient(135deg,#fde8d0,#f5c49a)',
+      'linear-gradient(135deg,#d4f7d4,#8edfa0)',
+    ];
+    if (count($blog_posts) > 0):
+      foreach ($blog_posts as $i => $post): ?>
+    <a class="news-card" href="blog-post.php?id=<?php echo (int)$post['id']; ?>" style="text-decoration:none;color:inherit;">
+      <div class="news-img" style="background:<?php echo $newsGradients[$i % count($newsGradients)]; ?>;">
+        <?php if (!empty($post['image_path'])): ?>
+          <img src="<?php echo htmlspecialchars($post['image_path']); ?>" alt="<?php echo htmlspecialchars($post['title']); ?>" onerror="this.style.display='none'">
+        <?php endif; ?>
+        <?php if (!empty($post['category'])): ?><span class="news-tag"><?php echo htmlspecialchars($post['category']); ?></span><?php endif; ?>
       </div>
       <div class="news-body">
-        <div class="news-meta">March 12, 2025 &bull; <span>5 Min Read</span></div>
-        <h3>Essential Laundry Hacks Every Homeowner Should Know</h3>
-        <p>Discover simple tricks to extend the life of your clothes and keep them looking fresh.</p>
+        <div class="news-meta"><?php echo date("F j, Y", strtotime($post['created_at'])); ?> &bull; <span><?php echo (int)$post['read_minutes']; ?> Min Read</span></div>
+        <h3><?php echo htmlspecialchars($post['title']); ?></h3>
+        <p><?php echo htmlspecialchars($post['excerpt'] ?? ''); ?></p>
       </div>
-    </div>
-
-    <div class="news-card">
-      <div class="news-img" style="background:linear-gradient(135deg,#fde8d0,#f5c49a);">
-        <img src="https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=500&q=70" alt="Stain Guide"
-          onerror="this.style.display='none'">
-        <span class="news-tag">Guide</span>
-      </div>
-      <div class="news-body">
-        <div class="news-meta">March 20, 2025 &bull; <span>7 Min Read</span></div>
-        <h3>The Ultimate Guide to Removing Common Stains</h3>
-        <p>Learn professional techniques to tackle the most stubborn stains on any fabric type.</p>
-      </div>
-    </div>
-
-    <div class="news-card">
-      <div class="news-img" style="background:linear-gradient(135deg,#d4f7d4,#8edfa0);">
-        <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=500&q=70" alt="Family Laundry"
-          onerror="this.style.display='none'">
-        <span class="news-tag">Family</span>
-      </div>
-      <div class="news-body">
-        <div class="news-meta">March 26, 2025 &bull; <span>4 Min Read</span></div>
-        <h3>Efficient Laundry Sorting Techniques for Busy Families</h3>
-        <p>Smart sorting strategies that save time and protect your family's clothing from damage.</p>
-      </div>
-    </div>
-
+    </a>
+    <?php endforeach; else: ?>
+    <p class="text-center text-muted">No news yet. Check back soon!</p>
+    <?php endif; ?>
   </div>
 </section>
 
@@ -441,7 +424,7 @@ if (isset($_SESSION['user_id'])) {
         <li><a href="service-and-pricing.php">Services</a></li>
         <li><a href="contact-and-map-view.php">Find Location</a></li>
 
-        <li><a href="#news">Blog</a></li>
+        <li><a href="blog.php">Blog</a></li>
       </ul>
     </div>
 

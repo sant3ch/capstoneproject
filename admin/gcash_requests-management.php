@@ -38,10 +38,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     
     // Get customer and booking details for notification
     $details_query = "SELECT gr.user_id, gr.amount, gr.booking_id, gr.reference_number,
-                             u.first_name, u.last_name, u.email, u.phone,
+                             COALESCE(u.first_name, b.customer_first_name) AS first_name,
+                             COALESCE(u.last_name, b.customer_last_name) AS last_name,
+                             COALESCE(u.email, b.customer_email) AS email,
+                             COALESCE(u.phone, b.customer_mobile) AS phone,
                              b.service_type, b.booking_date, b.time_slot
                       FROM gcash_requests gr
-                      JOIN users u ON gr.user_id = u.id
+                      LEFT JOIN users u ON gr.user_id = u.id
                       JOIN bookings b ON gr.booking_id = b.id
                       WHERE gr.id = ?";
     $details_stmt = $conn->prepare($details_query);
@@ -130,13 +133,13 @@ $query = "
            b.machine_names,
            b.detergent,
            gr.amount as total_amount,
-           u.email,
-           u.phone,
-           u.first_name,
-           u.last_name
+           COALESCE(u.email, b.customer_email) AS email,
+           COALESCE(u.phone, b.customer_mobile) AS phone,
+           COALESCE(u.first_name, b.customer_first_name) AS first_name,
+           COALESCE(u.last_name, b.customer_last_name) AS last_name
     FROM gcash_requests gr
     JOIN bookings b ON gr.booking_id = b.id
-    JOIN users u ON gr.user_id = u.id
+    LEFT JOIN users u ON gr.user_id = u.id
     ORDER BY 
         CASE WHEN gr.status = 'pending' THEN 1
              WHEN gr.status = 'approved' THEN 2
@@ -301,11 +304,18 @@ $unread_count = getAdminUnreadCount();
                         <i class="fas fa-cogs"></i> Management
                     </a>
                     <ul class="collapse show list-unstyled ps-4" id="managementMenu">
+                        <li><a class="nav-link py-1" href="manage_services.php"><i class="fas fa-tags me-2"></i> Services &amp; Pricing</a></li>
+                        <li><a class="nav-link py-1" href="manage_blog.php"><i class="fas fa-newspaper me-2"></i> Blog / News</a></li>
+                        <li><a class="nav-link py-1" href="manage_about.php"><i class="fas fa-info-circle me-2"></i> About Page</a></li>
+                        <li><a class="nav-link py-1" href="manage_testimonials.php"><i class="fas fa-comment-dots me-2"></i> Testimonials</a></li>
+                        <li><a class="nav-link py-1" href="manage_why_choose_us.php"><i class="fas fa-thumbs-up me-2"></i> Why Choose Us</a></li>
                         <li><a class="nav-link py-1" href="manage_users.php"><i class="fas fa-user me-2"></i> Registered Users</a></li>
                         <li><a class="nav-link py-1" href="manage_machines.php"><i class="fas fa-tools me-2"></i> Machine Management</a></li>
                         <li><a class="nav-link py-1" href="manage_inventory.php"><i class="fas fa-box me-2"></i> Inventory Management</a></li>
                         <li><a class="nav-link py-1" href="booking_schedules.php"><i class="fas fa-calendar-alt me-2"></i> Booked Schedules</a></li>
+                        <li><a class="nav-link py-1" href="completion_calendar.php"><i class="fas fa-calendar-check me-2"></i> Completion Calendar</a></li>
                         <li><a class="nav-link py-1" href="queue_management.php"><i class="fas fa-people-arrows me-2"></i> Queue Management</a></li>
+                        <li><a class="nav-link py-1" href="manage_walkins.php"><i class="fas fa-user-plus me-2"></i> Walk-in Customers</a></li>
                         <li><a class="nav-link py-1 active" href="gcash_requests-management.php"><i class="fas fa-mobile-alt me-2"></i> GCASH Requests</a></li>
                         <li><a class="nav-link py-1" href="claimed_rewards.php"><i class="fas fa-gift me-2"></i> Claimed Rewards</a></li>
                         <li><a class="nav-link py-1" href="admin_notifications.php"><i class="fas fa-bell me-2"></i> Notifications</a></li>

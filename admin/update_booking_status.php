@@ -38,7 +38,7 @@ try {
     $booking_query = $conn->prepare("
         SELECT b.id, b.status, b.user_id, u.first_name, u.last_name
         FROM bookings b
-        JOIN users u ON b.user_id = u.id
+        LEFT JOIN users u ON b.user_id = u.id
         WHERE b.id = ?
     ");
     $booking_query->bind_param("i", $booking_id);

@@ -54,7 +54,7 @@ $transactions = mysqli_query($conn,
             gr.is_holiday, gr.holiday_name
      FROM gcash_requests gr
      JOIN bookings b ON gr.booking_id = b.id
-     JOIN users u ON gr.user_id = u.id
+     LEFT JOIN users u ON gr.user_id = u.id
      WHERE gr.status IN ('approved', 'completed')
      ORDER BY transaction_date DESC");
 ?>
@@ -98,12 +98,19 @@ $transactions = mysqli_query($conn,
                     <a class="nav-link dropdown-toggle" data-bs-toggle="collapse" href="#managementMenu" role="button">
                         <i class="fas fa-cogs"></i> Management
                     </a>
-                    <ul class="collapse list-unstyled ps-4" id="managementMenu">
+                    <ul class="collapse show list-unstyled ps-4" id="managementMenu">
+                        <li><a class="nav-link py-1" href="manage_services.php"><i class="fas fa-tags me-2"></i> Services &amp; Pricing</a></li>
+                        <li><a class="nav-link py-1" href="manage_blog.php"><i class="fas fa-newspaper me-2"></i> Blog / News</a></li>
+                        <li><a class="nav-link py-1" href="manage_about.php"><i class="fas fa-info-circle me-2"></i> About Page</a></li>
+                        <li><a class="nav-link py-1" href="manage_testimonials.php"><i class="fas fa-comment-dots me-2"></i> Testimonials</a></li>
+                        <li><a class="nav-link py-1" href="manage_why_choose_us.php"><i class="fas fa-thumbs-up me-2"></i> Why Choose Us</a></li>
                         <li><a class="nav-link py-1" href="manage_users.php"><i class="fas fa-user me-2"></i> Registered Users</a></li>
                         <li><a class="nav-link py-1" href="manage_machines.php"><i class="fas fa-tools me-2"></i> Machine Management</a></li>
                         <li><a class="nav-link py-1" href="manage_inventory.php"><i class="fas fa-box me-2"></i> Inventory Management</a></li>
                         <li><a class="nav-link py-1" href="booking_schedules.php"><i class="fas fa-calendar-alt me-2"></i> Booked Schedules</a></li>
+                        <li><a class="nav-link py-1" href="completion_calendar.php"><i class="fas fa-calendar-check me-2"></i> Completion Calendar</a></li>
                         <li><a class="nav-link py-1" href="queue_management.php"><i class="fas fa-people-arrows me-2"></i> Queue Management</a></li>
+                        <li><a class="nav-link py-1" href="manage_walkins.php"><i class="fas fa-user-plus me-2"></i> Walk-in Customers</a></li>
                         <li><a class="nav-link py-1 active" href="payment_requests-management.php"><i class="fas fa-money-bill-wave me-2"></i> Payment Requests</a></li>
                         <li><a class="nav-link py-1" href="claimed_rewards.php"><i class="fas fa-gift me-2"></i> Claimed Rewards</a></li>
                         <li><a class="nav-link py-1" href="admin_notifications.php"><i class="fas fa-bell me-2"></i> Notifications</a></li>

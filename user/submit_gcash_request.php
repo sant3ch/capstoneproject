@@ -42,53 +42,50 @@ require_once dirname(__FILE__, 2) . '/includes/booking-functions.php';
 // Clean output buffer
 ob_end_clean();
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['status' => 'error', 'message' => 'Unauthorized access. Please login.']);
-    exit();
-}
-
-$user_id = $_SESSION['user_id'];
+// Allow registered users (session) OR guests (booking token)
+require_once dirname(__FILE__, 2) . '/includes/guest-access.php';
+$user_id = $_SESSION['user_id'] ?? null;
+$guest_token = $_POST['guest_token'] ?? null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Get raw POST data to debug
     $raw_post = file_get_contents('php://input');
     error_log("Raw POST data: " . $raw_post);
-    
+
     $booking_id = isset($_POST['booking_id']) ? intval($_POST['booking_id']) : 0;
     $payment_method = 'GCASH';
-    
-    error_log("Received booking_id: " . $booking_id . ", user_id: " . $user_id);
-    
+
     if ($booking_id <= 0) {
         echo json_encode(['status' => 'error', 'message' => 'Invalid booking ID']);
         exit();
     }
-    
+
     try {
-        // Fetch booking details
-        $query = "
-            SELECT b.*, u.first_name, u.last_name, u.email, u.phone 
-            FROM bookings b
-            JOIN users u ON b.user_id = u.id
-            WHERE b.id = ? AND b.user_id = ?
-        ";
-        
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            throw new Exception('Failed to prepare query: ' . ($conn->error ?? 'Unknown database error'));
-        }
-        
-        $stmt->bind_param("ii", $booking_id, $user_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $booking = $result->fetch_assoc();
-        $stmt->close();
-        
+        // Authorize: session owner or matching guest token
+        $booking = getBookingForViewer($conn, $booking_id, $guest_token);
         if (!$booking) {
-            error_log("Booking not found: booking_id=" . $booking_id . ", user_id=" . $user_id);
-            echo json_encode(['status' => 'error', 'message' => 'Booking not found or does not belong to you']);
+            echo json_encode(['status' => 'error', 'message' => 'Booking not found or access denied']);
             exit();
+        }
+        // Use the booking's own user_id (NULL for guests) for inserts
+        $user_id = $booking['user_id'];
+        // Resolve display name/contact: booking snapshot, fall back to the user profile
+        $booking['first_name'] = $booking['customer_first_name'] ?? '';
+        $booking['last_name']  = $booking['customer_last_name'] ?? '';
+        $booking['email']      = $booking['customer_email'] ?? '';
+        $booking['phone']      = $booking['customer_mobile'] ?? '';
+        if ($user_id) {
+            $uq = $conn->prepare("SELECT first_name, last_name, email, phone FROM users WHERE id = ?");
+            $uq->bind_param("i", $user_id);
+            $uq->execute();
+            $ur = $uq->get_result()->fetch_assoc();
+            $uq->close();
+            if ($ur) {
+                $booking['first_name'] = $booking['first_name'] ?: $ur['first_name'];
+                $booking['last_name']  = $booking['last_name']  ?: $ur['last_name'];
+                $booking['email']      = $booking['email']      ?: $ur['email'];
+                $booking['phone']      = $booking['phone']      ?: $ur['phone'];
+            }
         }
         
         // Check if booking is already paid or has pending GCASH request
@@ -232,7 +229,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        // 3. Create notification for user with a clickable link
+        // 3. Create notification for user with a clickable link (registered users only)
+        if ($user_id) {
             $user_title = "GCASH Payment Request Submitted";
             $user_message = "Your GCASH payment request for ₱" . number_format($amount, 2) . " (Booking #$booking_id) has been submitted. Reference: $reference_number";
             $user_link = "user-profile.php?view_gcash_request=" . $request_id;
@@ -261,6 +259,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $insert_user_notif->execute();
                 $insert_user_notif->close();
             }
+        }
         
         // 4. Update booking status (use 'Pending' since it's in the enum)
         $update_booking = $conn->prepare("

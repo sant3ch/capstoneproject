@@ -3,48 +3,58 @@ session_start();
 require '../config.php';
 require_once '../includes/admin-notifications.php';
 require_once '../includes/booking-functions.php';
+require_once '../includes/guest-access.php';
 
 /** @var mysqli $conn */
 
-if (!isset($_SESSION['user_id'])) {
+// Get booking ID + optional guest token from URL
+$booking_id  = $_GET['id'] ?? null;
+$guest_token = $_GET['ref'] ?? null;
+$user_id     = $_SESSION['user_id'] ?? null;
+
+// Must be a logged-in user OR a guest with a booking id (token checked below)
+if (!$user_id && !$booking_id) {
     header("Location: ../login.php");
     exit();
 }
 
-// Get booking ID from URL or session
-$booking_id = $_GET['id'] ?? null;
-$user_id = $_SESSION['user_id'];
-
 try {
-    // Get user info
-    $user_query = "SELECT * FROM users WHERE id = ?";
-    $stmt = $conn->prepare($user_query);
-    $stmt->bind_param('i', $user_id);
-    $stmt->execute();
-    $user = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-
-    // Get booking info
+    // Get booking info — owner (session) or guest (token), via shared access check
     if ($booking_id) {
-        // Get specific booking by ID
-        $booking_query = "SELECT * FROM bookings WHERE id = ? AND user_id = ?";
-        $stmt = $conn->prepare($booking_query);
-        $stmt->bind_param('ii', $booking_id, $user_id);
+        $booking = getBookingForViewer($conn, $booking_id, $guest_token);
     } else {
-        // Get latest booking
-        $booking_query = "SELECT * FROM bookings WHERE user_id = ? ORDER BY id DESC LIMIT 1";
-        $stmt = $conn->prepare($booking_query);
+        // Logged-in user's latest booking
+        $stmt = $conn->prepare("SELECT * FROM bookings WHERE user_id = ? ORDER BY id DESC LIMIT 1");
         $stmt->bind_param('i', $user_id);
+        $stmt->execute();
+        $booking = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
     }
-    
-    $stmt->execute();
-    $booking = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
 
     if (!$booking) {
-        // No booking found
-        header('Location: book-now.php');
+        // Not found or access denied
+        header('Location: ' . ($user_id ? 'book-now.php' : '../login.php'));
         exit();
+    }
+
+    $is_guest_booking = empty($booking['user_id']);
+
+    // Get user info (registered) or synthesize from the booking's guest details
+    $user = null;
+    if ($user_id) {
+        $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
+        $stmt->bind_param('i', $user_id);
+        $stmt->execute();
+        $user = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+    }
+    if (!$user) {
+        $user = [
+            'first_name' => $booking['customer_first_name'] ?? 'Guest',
+            'last_name'  => $booking['customer_last_name'] ?? '',
+            'email'      => $booking['customer_email'] ?? '',
+            'phone'      => $booking['customer_mobile'] ?? '',
+        ];
     }
 
     // Check if rescheduled
@@ -994,12 +1004,12 @@ function getBreakdownItems($booking, $all_services, $services_list) {
         ><i class="fas fa-home mr-2"></i> Return to Home</a
     >
     <a
-        href="user-profile.php"
+        href="<?php echo $is_guest_booking ? ('booking_confirmation.php?id=' . (int)$booking['id'] . '&ref=' . urlencode($booking['guest_token'] ?? '')) : 'user-profile.php'; ?>"
         class="font-medium py-3 px-4 rounded-lg text-center transition duration-300"
         style="background-color: #6366f1; color: white; border: 1px solid #6366f1;"
         onmouseover="this.style.backgroundColor='#4338ca'"
         onmouseout="this.style.backgroundColor='#6366f1'"
-        ><i class="fas fa-calendar-alt mr-2"></i> View My Bookings</a
+        ><i class="fas fa-calendar-alt mr-2"></i> <?php echo $is_guest_booking ? 'View Booking Status' : 'View My Bookings'; ?></a
     >
 </div>
             </div>
@@ -1191,7 +1201,7 @@ function getBreakdownItems($booking, $all_services, $services_list) {
             <div class="modal-footer" style="border-top: 1px solid #f0f0f0; padding: 16px 24px; background-color: #f8f9fa;">
                 <button type="button" class="btn" id="gcashSuccessOkBtn" 
                         style="background: linear-gradient(135deg, var(--purple-primary) 0%, var(--purple-dark) 100%); color: white; border: none; border-radius: 6px; font-weight: 500; padding: 8px 24px; width: 100%;">
-                    <i class="fas fa-arrow-right me-2"></i> View My Bookings
+                    <i class="fas fa-arrow-right me-2"></i> <?php echo $is_guest_booking ? 'View Booking Status' : 'View My Bookings'; ?>
                 </button>
             </div>
         </div>
@@ -1455,7 +1465,7 @@ function getBreakdownItems($booking, $all_services, $services_list) {
             <div class="modal-footer" style="border-top: 1px solid #f0f0f0; padding: 16px 24px; background-color: #f8f9fa;">
                 <button type="button" class="btn" id="cashSuccessOkBtn" 
                         style="background: linear-gradient(135deg, var(--purple-primary) 0%, var(--purple-dark) 100%); color: white; border: none; border-radius: 6px; font-weight: 500; padding: 8px 24px; width: 100%;">
-                    <i class="fas fa-arrow-right me-2"></i> View My Bookings
+                    <i class="fas fa-arrow-right me-2"></i> <?php echo $is_guest_booking ? 'View Booking Status' : 'View My Bookings'; ?>
                 </button>
             </div>
         </div>
@@ -1639,7 +1649,7 @@ function getBreakdownItems($booking, $all_services, $services_list) {
             <div class="modal-footer" style="border-top: 1px solid #f0f0f0; padding: 16px 24px; background-color: #f8f9fa;">
                 <button type="button" class="btn" id="inStoreSuccessOkBtn" 
                         style="background: linear-gradient(135deg, var(--purple-primary) 0%, var(--purple-dark) 100%); color: white; border: none; border-radius: 6px; font-weight: 500; padding: 8px 24px; width: 100%;">
-                    <i class="fas fa-arrow-right me-2"></i> View My Bookings
+                    <i class="fas fa-arrow-right me-2"></i> <?php echo $is_guest_booking ? 'View Booking Status' : 'View My Bookings'; ?>
                 </button>
             </div>
         </div>
@@ -1895,10 +1905,16 @@ function getBreakdownItems($booking, $all_services, $services_list) {
 <?php if (isset($_SESSION['user_id'])): ?>
     <script src="../assets/js/notifications.js"></script>
     <script src="../assets/js/confirmlogout-user.js"></script>
-    <script src="../assets/js/gcash-payment.js"></script>
-    <script src="../assets/js/cash-payment.js"></script>
-    <script src="../assets/js/in-store-payment.js"></script>
 <?php endif; ?>
+<script>
+    // Booking identity for payment calls (guests authenticate with the token)
+    window.BOOKING_ID = <?php echo (int)$booking['id']; ?>;
+    window.BOOKING_TOKEN = <?php echo json_encode($is_guest_booking ? ($booking['guest_token'] ?? '') : ''); ?>;
+    window.IS_GUEST = <?php echo $is_guest_booking ? 'true' : 'false'; ?>;
+</script>
+<script src="../assets/js/gcash-payment.js"></script>
+<script src="../assets/js/cash-payment.js"></script>
+<script src="../assets/js/in-store-payment.js"></script>
 </body>
 </html>
 

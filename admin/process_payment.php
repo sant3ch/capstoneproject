@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $query = "
         SELECT b.*, u.first_name, u.last_name, u.user_points AS points, u.id as user_id
         FROM bookings b
-        JOIN users u ON b.user_id = u.id
+        LEFT JOIN users u ON b.user_id = u.id
         WHERE b.id = ?
         AND b.status != 'Completed'
     ";

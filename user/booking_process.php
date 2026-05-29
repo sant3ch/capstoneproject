@@ -46,14 +46,11 @@ if (!$data) {
     exit;
 }
 
-// Check session
-if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['status' => 'error', 'message' => 'User not logged in.']);
-    exit;
-}
+// Guests (unregistered customers) are allowed — user_id stays null for them.
+$user_id = $_SESSION['user_id'] ?? null;
+$is_guest = ($user_id === null);
 
 // Validate
-$user_id = $_SESSION['user_id'];
 $booking_date = $data['booking_date'] ?? null;
 $time_slot = $data['time_slot'] ?? null;
 
@@ -70,6 +67,7 @@ $customer_email = $data['customer_email'] ?? null;
 $pickup_address = $data['pickup_address'] ?? null;
 $delivery_address = $data['delivery_address'] ?? null;
 $location_details = $data['location_details'] ?? null;
+$estimated_weight = (isset($data['estimated_weight']) && $data['estimated_weight'] !== '') ? (float)$data['estimated_weight'] : null;
 
 // Combine address with details if provided to ensure all info is saved
 if (!empty($location_details)) {
@@ -101,6 +99,21 @@ if (!$booking_date || !$time_slot || empty($services) || empty($machines)) {
     exit;
 }
 
+// Guests must provide contact details (no account on file)
+if ($is_guest) {
+    if (empty($customer_first_name) || empty($customer_last_name) || empty($customer_mobile) || empty($customer_email)) {
+        echo json_encode(['status' => 'error', 'message' => 'Please provide your name, mobile number and email to book as a guest.']);
+        exit;
+    }
+    if (!filter_var($customer_email, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode(['status' => 'error', 'message' => 'Please provide a valid email address.']);
+        exit;
+    }
+}
+
+// Token that lets a guest view / pay for this booking without an account
+$guest_token = $is_guest ? bin2hex(random_bytes(16)) : null;
+
 // Only require detergents if NOT dryer-only
 if (!$isDryerOnly && empty($detergents)) {
     echo json_encode(['status' => 'error', 'message' => 'Please select at least one laundry supply.']);
@@ -109,6 +122,25 @@ if (!$isDryerOnly && empty($detergents)) {
 
 // ========== IMPORTANT: Include config file FIRST before using $conn ==========
 require '../config.php';
+require_once '../includes/booking-data.php';
+
+// ========== Real-time availability check (online + walk-ins) ==========
+// Re-verify the slot still has the requested machines free, in case a walk-in
+// or another booking took them after this page was loaded.
+$req_w = 0; $req_d = 0;
+foreach ($machines as $mn) {
+    $l = strtolower((string)$mn);
+    if (strpos($l, 'washer') !== false)      $req_w++;
+    elseif (strpos($l, 'dryer') !== false)   $req_d++;
+}
+$avail = getAvailabilityForSlot($conn, $booking_date, $time_slot);
+if ($req_w > $avail['available_washers'] || $req_d > $avail['available_dryers']) {
+    echo json_encode(['status' => 'error',
+        'message' => "Those machines were just taken for that time slot. Only "
+            . (int)$avail['available_washers'] . " washer(s) and "
+            . (int)$avail['available_dryers'] . " dryer(s) remain — please pick another slot or fewer machines."]);
+    exit;
+}
 
 // ========== Fetch services from database ==========
 $services_from_db = [];
@@ -439,8 +471,10 @@ $sql = "INSERT INTO bookings (
     customer_last_name,
     customer_mobile,
     customer_email,
-    location_details
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    location_details,
+    estimated_weight,
+    guest_token
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 $stmt = $conn->prepare($sql);
 if (!$stmt) {
@@ -449,7 +483,7 @@ if (!$stmt) {
 }
 
 $stmt->bind_param(
-    "issssiississssssssss",
+    "issssiississssssssssds",
     $user_id,
     $booking_date,
     $service_str,
@@ -469,7 +503,9 @@ $stmt->bind_param(
     $customer_last_name,
     $customer_mobile,
     $customer_email,
-    $location_details
+    $location_details,
+    $estimated_weight,
+    $guest_token
 );
 
 if ($stmt->execute()) {
@@ -525,15 +561,16 @@ if ($stmt->execute()) {
     // They will only become unavailable when admin clicks "Assign Machine" or "Auto Assign Next"
     // in the queue_management.php page
     
-    // Create notification
-    $notification_message = "Your booking #$booking_id has been received. Queue Number: $queue_code. Stage: Pending / Booked.";
-    $notification_sql = "INSERT INTO notifications (user_id, title, message, booking_id) VALUES (?, 'Booking Confirmed', ?, ?)";
-    $notification_stmt = $conn->prepare($notification_sql);
-    
-    if ($notification_stmt) {
-        $notification_stmt->bind_param("isi", $user_id, $notification_message, $booking_id);
-        $notification_stmt->execute();
-        $notification_stmt->close();
+    // Create notification (registered users only — guests have no account to notify)
+    if ($user_id) {
+        $notification_message = "Your booking #$booking_id has been received. Queue Number: $queue_code. Stage: Pending / Booked.";
+        $notification_sql = "INSERT INTO notifications (user_id, title, message, booking_id) VALUES (?, 'Booking Confirmed', ?, ?)";
+        $notification_stmt = $conn->prepare($notification_sql);
+        if ($notification_stmt) {
+            $notification_stmt->bind_param("isi", $user_id, $notification_message, $booking_id);
+            $notification_stmt->execute();
+            $notification_stmt->close();
+        }
     }
     
     // Generate booking reference
@@ -588,7 +625,7 @@ if ($stmt->execute()) {
         'order_stage' => $order_stage,
         'booking_ref' => $booking_ref,
         'total_amount' => $total_amount,
-        'redirect' => 'booking_confirmation.php?id=' . $booking_id,
+        'redirect' => 'booking_confirmation.php?id=' . $booking_id . ($guest_token ? '&ref=' . $guest_token : ''),
         'debug' => [
             'services' => $validated_services,
             'service_prices' => $service_prices,

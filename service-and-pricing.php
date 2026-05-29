@@ -1,6 +1,26 @@
 <?php
 session_start();
 require 'config.php';
+require_once 'includes/content-helpers.php';
+
+// Service prices (shared with booking) + marketing display settings
+$svc = getServicesByName($conn);
+$p_washer = svcPrice($svc, 'Self-Service - Washer', 65);
+$p_dryer  = svcPrice($svc, 'Self-Service - Dryer', 80);
+$p_fold   = svcPrice($svc, 'Fold', 30);
+$p_full   = svcPrice($svc, 'Full-Service - Wash & Dry', 145);
+$p_wdf    = (float) getSetting($conn, 'svc_wash_dry_fold_price', 175);
+$self_desc     = getSetting($conn, 'svc_self_desc', 'Enjoy our modern, efficient self-service washers and dryers. Ideal for quick and budget-friendly laundry.');
+$full_desc     = getSetting($conn, 'svc_full_desc', "Our professional staff handles everything — washing, drying, and folding — so you don't have to.");
+$capacity_note = getSetting($conn, 'svc_capacity_note', '8kg per load capacity');
+$wdf_label     = getSetting($conn, 'svc_wash_dry_fold_label', 'Wash, dry & fold');
+$peso = fn($n) => '₱' . number_format((float)$n, 0);
+
+// Any service the admin adds beyond the 4 curated ones is shown automatically
+// in a "More Services" grid below, so business expansion is visible to customers.
+$coreNames = ['Self-Service - Washer', 'Self-Service - Dryer', 'Fold', 'Full-Service - Wash & Dry'];
+$extraServices = array_values(array_filter($svc, fn($r) => !in_array($r['service_name'], $coreNames, true)));
+
 $notifications = [];
 if (isset($_SESSION['user_id'])) {
     $stmt = $conn->prepare("SELECT title, message, created_at FROM notifications
@@ -37,7 +57,7 @@ if (isset($_SESSION['user_id'])) {
     <li><a href="service-and-pricing.php" class="active">Services</a></li>
     <li><a href="contact-and-map-view.php">Find Location</a></li>
 
-    <li><a href="index.php#news">Blog</a></li>
+    <li><a href="blog.php">Blog</a></li>
   </ul>
   <div class="jl-nav-right">
     <?php if (isset($_SESSION['user_id'])): ?>
@@ -122,16 +142,16 @@ if (isset($_SESSION['user_id'])) {
       <h3>Self-Service Laundry</h3>
       <div class="sc-price">
         <span class="price-from">from</span>
-        <span class="price-amount">₱65</span>
+        <span class="price-amount"><?php echo $peso($p_washer); ?></span>
         <span class="price-unit">/ load</span>
       </div>
-      <p class="sc-desc">Enjoy our modern, efficient self-service washers and dryers. Ideal for quick and budget-friendly laundry.</p>
+      <p class="sc-desc"><?php echo htmlspecialchars($self_desc); ?></p>
       <ul class="sc-features">
-        <li><i class="fas fa-check"></i> 8kg per load capacity</li>
-        <li><i class="fas fa-check"></i> Washing machines — ₱65/load</li>
-        <li><i class="fas fa-check"></i> Drying machines — ₱80/load</li>
+        <li><i class="fas fa-check"></i> <?php echo htmlspecialchars($capacity_note); ?></li>
+        <li><i class="fas fa-check"></i> Washing machines — <?php echo $peso($p_washer); ?>/load</li>
+        <li><i class="fas fa-check"></i> Drying machines — <?php echo $peso($p_dryer); ?>/load</li>
         <li><i class="fas fa-check"></i> Available detergents & softeners</li>
-        <li><i class="fas fa-check"></i> Folding service — ₱30 extra</li>
+        <li><i class="fas fa-check"></i> Folding service — <?php echo $peso($p_fold); ?> extra</li>
       </ul>
       <div class="sc-actions">
         <button class="btn-sc-detail" data-bs-toggle="modal" data-bs-target="#selfServiceModal">
@@ -150,14 +170,14 @@ if (isset($_SESSION['user_id'])) {
       <h3>Full-Service Laundry</h3>
       <div class="sc-price">
         <span class="price-from">from</span>
-        <span class="price-amount">₱145</span>
+        <span class="price-amount"><?php echo $peso($p_full); ?></span>
         <span class="price-unit">/ load</span>
       </div>
-      <p class="sc-desc">Our professional staff handles everything — washing, drying, and folding — so you don't have to.</p>
+      <p class="sc-desc"><?php echo htmlspecialchars($full_desc); ?></p>
       <ul class="sc-features">
-        <li><i class="fas fa-check"></i> 8kg per load capacity</li>
-        <li><i class="fas fa-check"></i> Wash, dry & fold — ₱175</li>
-        <li><i class="fas fa-check"></i> Wash & dry only — ₱145</li>
+        <li><i class="fas fa-check"></i> <?php echo htmlspecialchars($capacity_note); ?></li>
+        <li><i class="fas fa-check"></i> <?php echo htmlspecialchars($wdf_label); ?> — <?php echo $peso($p_wdf); ?></li>
+        <li><i class="fas fa-check"></i> Wash & dry only — <?php echo $peso($p_full); ?></li>
         <li><i class="fas fa-check"></i> Professional handling</li>
         <li><i class="fas fa-check"></i> Express service available</li>
       </ul>
@@ -171,6 +191,36 @@ if (isset($_SESSION['user_id'])) {
 
   </div>
 </section>
+
+<!-- ====== MORE SERVICES (admin-added) ====== -->
+<?php if (count($extraServices) > 0): ?>
+<section class="services-section" style="padding-top:0;">
+  <div class="services-header">
+    <span class="section-pill">More Options</span>
+    <h2>Additional Services</h2>
+    <p>New services we've added as our business grows.</p>
+  </div>
+  <div class="services-grid">
+    <?php foreach ($extraServices as $row): ?>
+    <div class="service-card">
+      <div class="sc-icon-wrap sc-blue"><i class="fas fa-plus-circle"></i></div>
+      <h3><?php echo htmlspecialchars($row['service_name']); ?></h3>
+      <div class="sc-price">
+        <span class="price-from">from</span>
+        <span class="price-amount"><?php echo $peso($row['price']); ?></span>
+        <span class="price-unit">/ load</span>
+      </div>
+      <?php if (!empty($row['description'])): ?>
+      <p class="sc-desc"><?php echo htmlspecialchars($row['description']); ?></p>
+      <?php endif; ?>
+      <div class="sc-actions">
+        <a href="user/book-now.php" class="btn-sc-book">Book Now</a>
+      </div>
+    </div>
+    <?php endforeach; ?>
+  </div>
+</section>
+<?php endif; ?>
 
 <!-- ====== WHY CHOOSE US ====== -->
 <section class="why-section">
@@ -220,14 +270,14 @@ if (isset($_SESSION['user_id'])) {
       <div class="modal-body jl-modal-body">
         <div class="modal-cols">
           <div class="modal-col">
-            <div class="modal-price-tag">₱65 – ₱80 <span>per load</span></div>
-            <p>Enjoy our modern and efficient self-service washers and dryers. Perfect for quick, budget-friendly laundry at your own pace.</p>
+            <div class="modal-price-tag"><?php echo $peso($p_washer); ?> – <?php echo $peso($p_dryer); ?> <span>per load</span></div>
+            <p><?php echo htmlspecialchars($self_desc); ?></p>
             <h6>What's Included:</h6>
             <ul class="modal-list">
-              <li><i class="fas fa-check-circle"></i> Washing machines — <strong>₱65/load</strong></li>
-              <li><i class="fas fa-check-circle"></i> Drying machines — <strong>₱80/load</strong></li>
+              <li><i class="fas fa-check-circle"></i> Washing machines — <strong><?php echo $peso($p_washer); ?>/load</strong></li>
+              <li><i class="fas fa-check-circle"></i> Drying machines — <strong><?php echo $peso($p_dryer); ?>/load</strong></li>
               <li><i class="fas fa-check-circle"></i> Available detergents & fabric softeners</li>
-              <li><i class="fas fa-check-circle"></i> Folding service — <strong>₱30</strong> additional</li>
+              <li><i class="fas fa-check-circle"></i> Folding service — <strong><?php echo $peso($p_fold); ?></strong> additional</li>
             </ul>
           </div>
           <div class="modal-col modal-col-right">
@@ -266,12 +316,12 @@ if (isset($_SESSION['user_id'])) {
       <div class="modal-body jl-modal-body">
         <div class="modal-cols">
           <div class="modal-col">
-            <div class="modal-price-tag modal-price-orange">₱145 – ₱175 <span>per load</span></div>
-            <p>Our professional staff handles everything from washing to folding, so you can focus on what matters.</p>
+            <div class="modal-price-tag modal-price-orange"><?php echo $peso($p_full); ?> – <?php echo $peso($p_wdf); ?> <span>per load</span></div>
+            <p><?php echo htmlspecialchars($full_desc); ?></p>
             <h6>What's Included:</h6>
             <ul class="modal-list">
-              <li><i class="fas fa-check-circle"></i> Wash, dry & fold — <strong>₱175</strong></li>
-              <li><i class="fas fa-check-circle"></i> Wash & dry only — <strong>₱145</strong></li>
+              <li><i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($wdf_label); ?> — <strong><?php echo $peso($p_wdf); ?></strong></li>
+              <li><i class="fas fa-check-circle"></i> Wash & dry only — <strong><?php echo $peso($p_full); ?></strong></li>
               <li><i class="fas fa-check-circle"></i> Available detergents & fabric softeners</li>
               <li><i class="fas fa-check-circle"></i> Express service options available</li>
             </ul>
@@ -308,7 +358,7 @@ if (isset($_SESSION['user_id'])) {
       <li><a href="service-and-pricing.php">Services</a></li>
       <li><a href="contact-and-map-view.php">Find Location</a></li>
 
-      <li><a href="index.php#news">Blog</a></li>
+      <li><a href="blog.php">Blog</a></li>
     </ul>
     <div class="footer-social">
       <a href="https://www.facebook.com/profile.php?id=100064010053494" target="_blank"><i class="fab fa-facebook-f"></i></a>
